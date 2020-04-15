@@ -7,6 +7,11 @@ var logger = require('morgan');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
+import analysisRouter from './routes/analysis';
+import registerRouter from './routes/register';
+
+import db from "./db/db";
+
 var app = express();
 
 // view engine setup
@@ -22,9 +27,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/api/users', usersRouter.default);
 
-import analysisRouter from './routes/analysis';
-
 app.use('/api/analysis' , analysisRouter);
+app.use("/api/register", registerRouter);
 
 const crawlingRouter = require("./routes/crawling").router;
 app.use("/crawl" , crawlingRouter);
@@ -47,6 +51,7 @@ app.use(function(err, req, res, next) {
 
 // 스케줄러 설정
 const cron = require('node-cron');
+// s | m | h | d | week | month
 cron.schedule("10 * * * * *", ()=>{
   console.log("[gomja] run in 10 seconds");
 });
