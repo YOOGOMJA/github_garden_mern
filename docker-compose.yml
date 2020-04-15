@@ -1,0 +1,36 @@
+version: "3.5" # 설치된 docker 버전에 따라 다릅니다!
+services:
+  server:
+    container_name: server
+    build: . # Dockerfile이 위치한 경로
+    ports:
+      - "4000:4000" # 연결할 포트
+    restart: on-failure
+    volumes:
+        - ./:/usr/src/app
+    environment: # 환경변수 설정
+      - NODE_PATH=src
+      - DB_HOST=mongo
+      - DB=test
+    networks: # 각 컨테이너를 연결하는 네트워크
+      - backend
+    
+
+  mongodb:
+    container_name: mongo
+    image: mvertes/alpine-mongo # alpine 이미지는 용량이 적어 사용하기 좋다.
+    ports:
+      - "27017:27017"
+    restart: on-failure
+    volumes:
+      - mongo:/data/db # volume을 만들어두지 않으면 컨테이너가 매번 종료될 때마다 데이터가 초기화 되므로 따로 볼륨으로 관리한다.
+    networks:
+      - backend # 앱 서버와 같은 네트워크에 연결
+      # 만약 이 항목을 넣지 않으면 연결이 없다는 에러가 발생함
+
+networks: # 가장 기본적인 bridge 네트워크
+  backend:
+    driver: bridge
+
+volumes: # mongodb 데이터
+  mongo:
