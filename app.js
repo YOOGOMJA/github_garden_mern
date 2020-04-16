@@ -24,7 +24,10 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
+// 리액트 파일을 static 경로로 추가
+app.use(express.static(path.resolve(__dirname, './client')));
+
+// app.use('/', indexRouter);
 app.use('/api/users', usersRouter.default);
 
 app.use('/api/analysis' , analysisRouter);
@@ -32,6 +35,11 @@ app.use("/api/register", registerRouter);
 
 const crawlingRouter = require("./routes/crawling").router;
 app.use("/crawl" , crawlingRouter);
+
+// 이제 모든 주소는 리액트로 보냄
+app.get('*', function(request, response) {
+  response.sendFile(path.resolve(__dirname, './client', 'index.html'));
+});
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
