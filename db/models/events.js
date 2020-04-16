@@ -30,7 +30,7 @@ const EventScheme = mongoose.Schema({
         }]
     },
     public: Boolean,
-    created_at: String,
+    created_at: Date,
 });
 
 const Event = mongoose.model("Event" , EventScheme);

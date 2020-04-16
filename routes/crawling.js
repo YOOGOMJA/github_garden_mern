@@ -69,7 +69,7 @@ router.post("/all", async (req, res, next)=>{
                                 repo: _event.repo,
                                 payload: _event.payload,
                                 public: _event.public,
-                                created_at: _event.created_at,
+                                created_at: new Date(_event.created_at),
                             });
                             await md_event.save();
                             // console.log("[gomja] save '"+ _user.login +"' events | id : " + md_event.id);
@@ -151,7 +151,7 @@ router.post("/:user_name", async (req, res, next)=>{
                                         commits: item.payload.commits,
                                     },
                                     public: item.public,
-                                    created_at: item.created_at
+                                    created_at: new Date(item.created_at)
                                 });
                                 // 3.2. 저장
                                 const current_event = await newEvent.save();
