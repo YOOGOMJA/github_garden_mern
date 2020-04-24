@@ -44,6 +44,61 @@ router.get("/challenge/:challenge_id/user", async (req, res, next)=>{
     }
 });
 
+// 유저 등록
+router.post('/user', async(req, res, next)=>{
+    // request params
+    // { github_user_name : string }
+    const github_user_name = req.body.github_user_name;
+    const current_user = await User.findOne({ login: github_user_name });
+
+    if(!current_user){
+        ghClient.get(
+            "/users/" + github_user_name,
+            {},
+            async (err, status, body, headers) => {
+                if (!err) {
+                    const newUser = new User({
+                        id: body.id,
+                        login: body.login.toLowerCase(),
+                        html_url: body.html_url,
+                        avartar_url: body.avartar_url,
+                        name: body.name,
+                        blog: body.blog,
+                        email: body.email,
+                        bio: body.bio,
+                        api_url: body.url,
+                        events_url: body.events_url,
+                    });
+                    const userResult = await newUser.save();
+                    if (userResult) {
+                        res.status(200).json({
+                            status: "success",
+                            message: "추가되었습니다",
+                        });
+                    }
+                }
+                else{
+                    const current_error = new ErrorLog({
+                        error: err,
+                        created_at: new Date()
+                    });
+                    current_error.save();
+
+                    res.status(400).json({
+                        status:"failed",
+                        message: "오류가 발생했습니다"
+                    });
+                }
+            }
+        );
+    }else{
+        res.status(400).json({
+            status: "failed",
+            message: "이미 존재하는 사용자입니다",
+        })   
+    }
+});
+
 router.post("/user/:user_name", async (req, res, next)=>{
     const current_user = await User.findOne({ login: req.params.user_name });
     if(!current_user){
