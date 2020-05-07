@@ -5,6 +5,7 @@ import { Challenge } from "../db/models/challenges";
 import { User } from "../db/models/users";
 import { getAllDatesBetween, getAttendRateByUser } from "../db/compute";
 import * as Models from'../db/models';
+import { fetchAttendance } from "../db/compute/analysis";
 
 const router = express.Router();
 
@@ -12,7 +13,12 @@ router.get("/", (req, res, next) => {
     res.json("Hello");
 });
 
-router.get("/commits/", async(req, res, next)=>{
+router.get("/attendance", async (req, res, next)=>{
+    const result = await fetchAttendance("challenge_1586951700146");
+    res.json(result);
+})
+
+router.get("/commits", async(req, res, next)=>{
     const all_commits = await Models.Commit.aggregate([
         {
             $lookup: {

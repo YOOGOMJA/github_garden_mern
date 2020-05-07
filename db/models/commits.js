@@ -8,6 +8,7 @@ const CommitScheme = mongoose.Schema({
     },
     message : String,
     commit_date : Date,
+    commit_date_string : String,
     committer : {
         type : mongoose.Schema.Types.ObjectId,
         ref : "User",

@@ -1,4 +1,6 @@
 import * as Models from "../models";
+import moment from "moment";
+import { getAllDatesBetween } from "./tools";
 
 // TODO : 모든 등록된 프로젝트 구하기
 // TODO : 참여중인 모든 정원사 수 
@@ -12,8 +14,129 @@ import * as Models from "../models";
 // TODO : 참여중인 정원사 정보 
 // TODO : 전체 출석률
 
-// 커밋 분석
-const ComputeCommits = () => {};
+// 프로젝트 당 출석 현황 
+const fetchAttendance = challenge_id =>{
+    const currentPromise = new Promise(async (resolve, reject)=>{
+        const current_challenge = await Models.Challenge.findOne({ id : challenge_id });
+        if(current_challenge){
+            if(current_challenge.participants.length > 0){
+                const aggregatedCommits = await Models.Commit.aggregate([
+                    // 일치 조건
+                    {
+                        $match : {
+                            commit_date : {
+                                $gte : current_challenge.start_dt,
+                                $lte : current_challenge.finish_dt,
+                            },
+                            committer : {
+                                $in : current_challenge.participants,
+                            }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from : "users",
+                            localField : "committer",
+                            foreignField: "_id",
+                            as : "lookup_committer",
+                        }
+                    },  
+                    {
+                        $unwind: "$lookup_committer"
+                    },
+                    // 그룹
+                    {
+                        $group : {
+                            _id : {
+                                committer : "$lookup_committer",
+                                date : "$commit_date_string"
+                            },
+                            count : {
+                                $sum : 1
+                            }
+                        }
+                    },
+                    // 정렬
+                    {
+                        $sort: {
+                            "_id.committer.login": -1,
+                            "_id.date": -1,
+                        }
+                    }
+                ]);
+
+                // 일자별 정리하기 
+                const dates = getAllDatesBetween(current_challenge.start_dt, current_challenge.finish_dt);
+                const dates_templates = {};
+                dates.forEach(date=>{dates_templates[date] = 0;});
+                
+                let filtered = [];
+                
+                const getIndexFromFiltered = login=>{
+                    for(let idx = 0 ; idx < filtered.length; idx++){
+                        if(filtered[idx].info.login === login)
+                        {
+                            return idx
+                        }
+                    }
+                    return -1;
+                }
+
+                aggregatedCommits.forEach(_commit=>{
+                    const committer_id = _commit._id.committer.login;
+                    let current_idx = getIndexFromFiltered(committer_id);
+                    if(current_idx === -1){
+                        filtered.push({ 
+                            info : _commit._id.committer,
+                            attendances_count : 0,
+                            attendances_rate : 0,
+                            attendances : { ...dates_templates },
+                        });
+                        current_idx = filtered.length - 1;
+                    }
+                    filtered[current_idx]["attendances"][_commit._id.date] += _commit.count;
+                    filtered[current_idx].attendances_count += 1;
+                });
+
+                // 참여율 계산 
+                filtered.forEach(committer=>{
+                    committer.attendances_rate = (
+                        committer.attendances_count / 
+                        Object.keys(dates).length
+                    ) * 100;
+                });
+                
+                // 정렬 
+                filtered.sort((a , b)=>{
+                    return a.attendances_rate > b.attendances_rate ? -1 : a.attendances_rate < b.attendances_rate ? 1 : 0;
+                })
+
+                resolve({
+                    code : 1,
+                    status : "SUCCESS",
+                    message : "조회가 성공했습니다",
+                    // data : aggregatedCommits,
+                    data : filtered,
+                })
+            }
+            else{
+                reject({
+                    code : -2,
+                    status : "FAIL",
+                    message : "참가자가 등록되지 않았습니다"
+                })
+            }
+        }else{
+            reject({
+                code : -1,
+                status : "FAIL",
+                message : "존재하지 않는 도전 일정입니다"
+            })
+        }
+    });
+    return currentPromise;
+}
+
 // 저장소 분석
 const ComputeRepos = () => {};
 
@@ -87,6 +210,7 @@ const fetch = () => {
                                     author: currentCommitData.author,
                                     message: currentCommitData.message,
                                     commit_date: currentEvent.created_at,
+                                    commit_date_string: (new moment(currentEvent.created_at)).format("YYYY-MM-DD"),
                                     committer: currentEvent.actor,
                                     repo: currentRepository,
                                 });
@@ -115,4 +239,4 @@ const fetch = () => {
     return fetchPromise;
 };
 
-export { ComputeCommits, ComputeRepos, fetch };
+export { fetchAttendance, ComputeRepos, fetch };
