@@ -1,5 +1,5 @@
 import express from 'express';
-import { Crawler } from '../db/compute';
+import { Crawler, Analytics } from '../db/compute';
 
 const router = express.Router();
 router.get("/" ,(req, res, next)=>{
@@ -9,7 +9,6 @@ router.get("/" ,(req, res, next)=>{
 });
 
 router.post("/all" , (req, res, next)=>{
-    // console.log("Hello");
     Crawler(req.body.auth_key)
     .then(result=>{
         res.status(200).json(result);
@@ -19,7 +18,17 @@ router.post("/all" , (req, res, next)=>{
     });
 });
 
-router.post("/:user_name", async (req, res, next)=>{
+router.get("/fetch" , (req, res, next)=>{
+    Analytics.fetch()
+    .then(result=>{
+        res.json(result);
+    })
+    .catch(result=>{
+        res.status(400).json(result);
+    });
+});
+
+router.post("/:user_name", (req, res, next)=>{
     // 패스워드가 주어졌을 때 크롤링하도록 함
     try{
         const result = Crawler(req.body.auth_key, req.params.user_name);
