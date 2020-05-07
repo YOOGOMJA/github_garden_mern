@@ -11,6 +11,20 @@ router.get("/", (req, res, next) => {
     res.json("Hello");
 });
 
+
+// TODO : 모든 등록된 프로젝트 구하기
+// TODO : 참여중인 모든 정원사 수 
+// TODO : 현재 저장된 모든 커밋
+// TODO : 프로젝트가 시작한 시간 (시작일자부터 오늘까지)
+// TODO : 정원사 별 참여율 순위 (출석 일자 / 오늘(<=마지막날)) + 평균
+// TODO : 일별 출석한 정원사 비율(출석자 / 총원)
+// TODO : 등록된 커밋과 저장소에 사용된 언어 비율 
+// TODO : 요즘 커밋이 가장 많이 등록된 저장소 
+// TODO : DSC에서 등록한 저장소 정보 
+// TODO : 참여중인 정원사 정보 
+// TODO : 전체 출석률
+
+
 // TODO: 특정 도전 기간에 참여한 모든 사용자와 참석율
 router.get("/challenge/:challenge_id/user/", async (req, res, next) => {
     const run_at = new Date();
