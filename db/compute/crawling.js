@@ -38,22 +38,22 @@ const fetchEvent = async user_name => {
                                 });
                                 if(!_duplicatedEvent){
                                     const _mEvent = new Models.Event({
-                                        id: `${current_user.login}_${item.id}`,
-                                        type: item.type,
+                                        id: `${current_user.login}_${_event.id}`,
+                                        type: _event.type,
                                         actor : current_user,
                                         repo : {
-                                            id: item.repo.id,
-                                            name : item.repo.name,
+                                            id: _event.repo.id,
+                                            name : _event.repo.name,
                                         },
                                         payload: {
-                                            push_id: item.payload.push_id,
-                                            size: item.payload.size,
-                                            distinct_size: item.payload.distinct_size,
-                                            ref: item.payload.ref,
-                                            commits: item.payload.commits,
+                                            push_id: _event.payload.push_id,
+                                            size: _event.payload.size,
+                                            distinct_size: _event.payload.distinct_size,
+                                            ref: _event.payload.ref,
+                                            commits: _event.payload.commits,
                                         },
-                                        public: item.public,
-                                        created_at : new Date(item.created_at)
+                                        public: _event.public,
+                                        created_at : new Date(_event.created_at)
                                     });
                                     try{
                                         const result = await _mEvent.save();
