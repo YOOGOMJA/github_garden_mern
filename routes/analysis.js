@@ -4,11 +4,42 @@ import { Event } from "../db/models/events";
 import { Challenge } from "../db/models/challenges";
 import { User } from "../db/models/users";
 import { getAllDatesBetween, getAttendRateByUser } from "../db/compute";
+import * as Models from'../db/models';
 
 const router = express.Router();
 
 router.get("/", (req, res, next) => {
     res.json("Hello");
+});
+
+router.get("/commits/", async(req, res, next)=>{
+    const all_commits = await Models.Commit.aggregate([
+        {
+            $lookup: {
+                from: 'repositories',
+                localField: 'repo',
+                foreignField: '_id',
+                as: 'lookuped_repo'
+            }
+        },
+        {
+            $lookup: {
+                from: 'users',
+                localField: 'committer',
+                foreignField: '_id',
+                as: 'lookuped_committer'
+            }
+        },
+        {
+            $sort: {
+                commit_date : -1,
+            }
+        }
+    ]);
+
+    res.json({
+        data : all_commits
+    });
 });
 
 // TODO: 특정 도전 기간에 참여한 모든 사용자와 참석율
