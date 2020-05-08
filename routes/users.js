@@ -10,12 +10,25 @@ const router = express.Router();
 const ghClient = github.client();
 
 /* GET users listing. */
-router.get("/", async function (req, res, next) {
-    const result = await Models.User.find();
-    res.status(200).json({
-        status: "success",
-        data: result,
-    });
+router.get("/", async (req, res, next)=>{
+    console.log("hello users api!");
+    try{
+      const result = await Models.User.find();
+      console.log("load complete");
+      res.status(200).json({
+          status: "success",
+          data: result,
+      });
+    }
+    catch(e){
+      console.log("error !" , e);
+      res.status(500).json({
+        code : -1,
+        satus : "FAIL",
+        message : "오류가 발생했습니다",
+        error : e
+      })
+    }
 });
 
 router.post("/:user_name", async (req, res, next) => {

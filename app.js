@@ -4,12 +4,11 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-// var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
-
+import usersRouter from './routes/users';
 import analysisRouter from './routes/analysis';
-import registerRouter from './routes/register';
+import challengesRouter from './routes/challenges';
 
+// 로드하고 자동으로 실행됨
 import db from "./db/db";
 
 var app = express();
@@ -27,12 +26,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 // 리액트 파일을 static 경로로 추가
 app.use(express.static(path.resolve(__dirname, './client')));
 
-// app.use('/', indexRouter);
-app.use('/api/users', usersRouter.default);
-
+app.use('/api/users', usersRouter);
 app.use('/api/analysis' , analysisRouter);
-app.use("/api/register", registerRouter);
+app.use("/api/challenges", challengesRouter);
 
+// 추후 삭제해야 
 const crawlingRouter = require("./routes/crawling").router;
 app.use("/crawl" , crawlingRouter);
 
