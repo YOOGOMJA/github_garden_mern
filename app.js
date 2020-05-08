@@ -4,7 +4,7 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-var indexRouter = require('./routes/index');
+// var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
 import analysisRouter from './routes/analysis';
@@ -59,9 +59,20 @@ app.use(function(err, req, res, next) {
 
 // 스케줄러 설정
 const cron = require('node-cron');
+import {Crawler, Loggers, Analytics} from './db/compute';
+import info from './secure/info.json';
 // s | m | h | d | week | month
-cron.schedule("10 * * * * *", ()=>{
-  console.log("[gomja] run in 10 seconds");
+cron.schedule("* * 1 * * *", async ()=>{
+  console.log("[SCHEDULER] 데이터 불러오기 시작 ");
+  try{
+    const crawler_result = await Crawler(info.secret);
+    const analytics_result = await Analytics.fetch();
+    // Loggers.Crawler()
+    console.log("[SCHEDULER] 데이터 불러오기 성공");
+  }
+  catch(e){
+    Loggers.Error(e);
+  }
 });
 
 module.exports = app;
