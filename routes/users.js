@@ -90,27 +90,36 @@ router.get("/:user_name/commits", async (req, res, next) => {
         });
 
         if (current_user) {
-            const commits = await Models.Commit.find({
-                committer: current_user,
+            const commits = await Models.Commit.aggregate([
+                {
+                    $match: {
+                        committer: current_user._id
+                    },
+                },
+                {
+                    $sort: {
+                        commit_date: -1,
+                    },
+                },
+                {
+                  $lookup: {
+                    from: 'repositories',
+                    localField : 'repo',
+                    foreignField : "_id",
+                    as : "repo_detail"
+                  }
+                },
+                {
+                  $unwind : "$repo_detail"
+                }
+            ]);
+                
+            res.json({
+              code : 1,
+              status : "SUCCESS",
+              message : "조회에 성공했습니다",
+              data : commits
             })
-                .populate("repo")
-                .exec((err, result) => {
-                    if (!err) {
-                        res.json({
-                            code: 1,
-                            status: "SUCCESS",
-                            message: "데이터를 가져왔습니다",
-                            data: result,
-                        });
-                    } else {
-                        res.status(500).json({
-                            code: -2,
-                            status: "ERROR",
-                            message: "오류가 발생했습니다",
-                            error: err,
-                        });
-                    }
-                });
         } else {
             res.status(400).json({
                 code: -1,
@@ -226,15 +235,18 @@ router.post("/:user_name/fetch", async (req, res, next) => {
         });
 
         if (current_user) {
-          const crawling_result = await Crawler(info.secret, current_user.login);
-          const analytics_result = await Analytics.fetch();
-          res.status(200).json({
-            code : 1,
-            status : "SUCCESS",
-            message : "데이터를 새로 가져왔습니다",
-            crawling_result : crawling_result,
-            analytics_result: analytics_result
-          });
+            const crawling_result = await Crawler(
+                info.secret,
+                current_user.login
+            );
+            const analytics_result = await Analytics.fetch();
+            res.status(200).json({
+                code: 1,
+                status: "SUCCESS",
+                message: "데이터를 새로 가져왔습니다",
+                crawling_result: crawling_result,
+                analytics_result: analytics_result,
+            });
         } else {
             res.status(400).json({
                 code: -2,
