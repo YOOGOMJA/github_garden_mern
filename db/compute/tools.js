@@ -1,11 +1,17 @@
 import moment from 'moment';
 
-const getAllDatesBetween = (start_dt, finish_dt, format) => {
+const getAllDatesBetween = (start_dt, finish_dt, format, hasAllDates) => {
     format = format || "YYYY-MM-DD";
     start_dt = moment(start_dt);
     finish_dt = moment(finish_dt);
+    if(!hasAllDates){ 
+        const current_dt = new moment();
+        if(current_dt.diff(finish_dt) < 0){
+            finish_dt = current_dt;
+        }
+    }
     const dates = [];
-    const diff = finish_dt.diff(start_dt, "day");
+    const diff = hasAllDates ? finish_dt.diff(start_dt, "day") : finish_dt.diff(start_dt, "day") + 1;
     for(let i= 0 ; i <= diff; i++){
         dates.push(start_dt.clone().add(i-1,"days").format(format));
     }

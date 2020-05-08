@@ -138,6 +138,8 @@ const fetchAttendance = challenge_id =>{
 }
 
 // 저장소 분석
+// TODO : 가장 관련 커밋이 많은 저장소 
+// TODO : 가장 관련 contributor가 많은 저장소
 const ComputeRepos = () => {};
 
 const fetch = () => {
