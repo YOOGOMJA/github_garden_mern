@@ -5,7 +5,7 @@ import { Challenge } from "../db/models/challenges";
 import { User } from "../db/models/users";
 import { getAllDatesBetween, getAttendRateByUser } from "../db/compute";
 import * as Models from'../db/models';
-import { fetchAttendance } from "../db/compute/analysis";
+import {Analytics} from '../db/compute';
 
 const router = express.Router();
 
@@ -14,9 +14,42 @@ router.get("/", (req, res, next) => {
 });
 
 router.get("/attendance", async (req, res, next)=>{
-    const result = await fetchAttendance("challenge_1586951700146");
+    const result = await Analytics.fetchAttendance("challenge_1586951700146");
     res.json(result);
 })
+
+router.get("/languages", async (req, res, next)=>{
+    const result = await Analytics.fetchLanguagePopulation();
+    res.json(result);
+});
+
+router.get('/summary' , async(req, res, next)=>{
+    try{
+        // 첫 화면에 보여줄 저장소 이름 여기에 기재
+        const featured_repository_name = "DSC-Sahmyook/Git-Tutorial-V2";
+
+        const summary = await Analytics.fetchSummary();
+        const popular_repository = await Analytics.fetchPopularRepository();
+        const featured_repostiory = await Models.Repository.findOne({ name : featured_repository_name });
+        const latest_challenge = await Models.Challenge.aggregate([
+            {
+                $sort : { created_at : -1 }
+            }
+        ]);
+        const attendances = await Analytics.fetchAttendance(latest_challenge[0].id);
+        res.json({
+            code : 1,
+            status : "SUCCESS",
+            data : {
+                summary : summary.data,
+                popular_repository: popular_repository.data,
+                featured_repository : featured_repostiory,
+                attendances : attendances.data,
+            }
+        });
+    }
+    catch (e){ res.json(e); }
+});
 
 router.get("/commits", async(req, res, next)=>{
     const all_commits = await Models.Commit.aggregate([
