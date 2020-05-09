@@ -1,10 +1,7 @@
 import mongoose from 'mongoose';
 
 const CrawlingLogScheme = mongoose.Schema({
-    targets : [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-    }],
+    message : String,
     auth_key: String,
     created_at: Date,
 });

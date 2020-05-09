@@ -19,7 +19,7 @@ router.post("/all" , (req, res, next)=>{
 });
 
 router.get("/fetch" , (req, res, next)=>{
-    Analytics.fetch()
+    Analytics.computeEvents()
     .then(result=>{
         res.json(result);
     })
@@ -31,7 +31,7 @@ router.get("/fetch" , (req, res, next)=>{
 router.post("/:user_name", (req, res, next)=>{
     // 패스워드가 주어졌을 때 크롤링하도록 함
     try{
-        const result = Crawler(req.body.auth_key, req.params.user_name);
+        const result = Crawler.fetchEvents(req.body.auth_key, req.params.user_name);
         res.status(200).json({
             code : 1,
             status : 'SUCCESS',
@@ -47,5 +47,10 @@ router.post("/:user_name", (req, res, next)=>{
         });
     }
 });
+
+router.get("/language", async (req,res, next)=>{
+    const result = await Crawler.fetchRepoLanguages("YOOGOMJA/github_garden_mern");
+    res.json(result);
+})
 
 export { router };

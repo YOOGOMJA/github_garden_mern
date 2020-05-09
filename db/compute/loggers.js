@@ -13,9 +13,9 @@ const Error = err=>{
 }
 
 // 크롤링 로그 쌓기 
-const Crawler = (targets, auth_key)=>{
+const Crawler = (message, auth_key)=>{
     const current_crawling_log = new CrawlingLog({
-        targets: targets,
+        message : message,
         auth_key : auth_key,
         created_at : new Date(),
     });

@@ -6,7 +6,10 @@ const RepositoryScheme = mongoose.Schema({
     contributor : [{
         type: mongoose.Schema.Types.ObjectId,
         ref : 'User'
-    }]
+    }],
+    languages: [
+        { name : String, rate : Number }
+    ]
 });
 
 const Repository = mongoose.model("Repository", RepositoryScheme);

@@ -3,7 +3,7 @@ import github from "octonode";
 
 import * as Models from "../db/models";
 
-import { Analytics, Crawler } from "../db/compute";
+import { Analytics, Crawler, Loggers } from "../db/compute";
 import info from "../secure/info.json";
 
 const router = express.Router();
@@ -241,18 +241,20 @@ router.get("/:user_name/challenges", async (req, res, next) => {
 
 // 해당 사용자의 정보를 새로 불러오고 새로 fetch함
 router.post("/:user_name/fetch", async (req, res, next) => {
-    // Crawler(info.secret,req.params.user_name)
     try {
         const current_user = await Models.User.findOne({
             login: req.params.user_name,
         });
 
         if (current_user) {
-            const crawling_result = await Crawler(
+            Loggers.Crawler(`사용자 [${req.params.user_name}] 데이터 갱신 시작`, info.secret);
+            const crawling_result = await Crawler.fetchEvents(
                 info.secret,
                 current_user.login
             );
             const analytics_result = await Analytics.fetch();
+
+            Loggers.Crawler(`사용자 [${req.params.user_name}] 데이터 갱신 완료`, info.secret);
             res.status(200).json({
                 code: 1,
                 status: "SUCCESS",
@@ -268,10 +270,12 @@ router.post("/:user_name/fetch", async (req, res, next) => {
             });
         }
     } catch (e) {
+        Loggers.Crawler(`사용자 [${req.params.user_name}] 데이터 갱신 실패`, info.secret);
         res.status(400).json({
             code: -1,
             status: "FAIL",
-            message: "이미 존재하는 사용자 입니다",
+            message: "오류가 발생했습니다",
+            error : e,
         });
     }
 });

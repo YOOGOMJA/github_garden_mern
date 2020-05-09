@@ -1,6 +1,9 @@
 import * as Models from "../models";
 import moment from "moment";
 import { getAllDatesBetween } from "./tools";
+import {fetchRepoLanguages } from './crawling';
+
+// github 데이터를 기반으로 MONGO DB 데이터를 새로 갱신하는 경우 사용됩니다.
 
 // TODO : 모든 등록된 프로젝트 구하기
 // TODO : 참여중인 모든 정원사 수 
@@ -13,6 +16,10 @@ import { getAllDatesBetween } from "./tools";
 // TODO : DSC에서 등록한 저장소 정보 
 // TODO : 참여중인 정원사 정보 
 // TODO : 전체 출석률
+
+// ================================================================================
+// 통계 연산 함수 : 정리된 데이터들로부터 데이터를 가져옵니다
+// ================================================================================
 
 // 프로젝트 당 출석 현황 
 const fetchAttendance = challenge_id =>{
@@ -135,14 +142,45 @@ const fetchAttendance = challenge_id =>{
         }
     });
     return currentPromise;
+
 }
 
-// 저장소 분석
-// TODO : 가장 관련 커밋이 많은 저장소 
-// TODO : 가장 관련 contributor가 많은 저장소
-const ComputeRepos = () => {};
+// ================================================================================
+// 재정리 함수들 : github api에서 가져온 raw 데이터들을 후처리, 혹은 새 문서로 저장합니다 
+// ================================================================================
 
-const fetch = () => {
+// 저장소들의 언어정보를 모두 가져옴
+const computeRepos = () => {
+    const computePromise = new Promise(async (resolve, reject)=>{
+        const allRepos = await Models.Repository.find();
+        let successes = [];
+        let fails = [];
+        for(let i = 0 ; i < allRepos.length ; i++){
+            const current_repo = allRepos[i];
+            try{
+                const current_repo_languages = await fetchRepoLanguages(current_repo.name);
+                successes.push(current_repo.name);
+            }
+            catch(e){
+                fails.push({
+                    name : current_repo.name,
+                    error : e
+                });
+            }
+        }
+        resolve({
+            code : 1,
+            status : "SUCCESS",
+            message : "모든 데이터를 가져왔습니다",
+            success_list : successes,
+            fail_list : fails
+        })
+    });
+    return computePromise;
+};
+
+// 이벤트로부터 커밋정보와 저장소 정보, 기여자 정보를 가져옴
+const computeEvents = () => {
     const fetchPromise = new Promise((resolve, reject) => {
         const allEvents = Models.Event.find()
             .populate("actor")
@@ -241,4 +279,4 @@ const fetch = () => {
     return fetchPromise;
 };
 
-export { fetchAttendance, ComputeRepos, fetch };
+export { fetchAttendance, computeEvents, computeRepos };
