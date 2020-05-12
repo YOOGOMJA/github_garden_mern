@@ -23,7 +23,7 @@ router.get("/languages", async (req, res, next)=>{
     res.json(result);
 });
 
-router.get('/summary' , async(req, res, next)=>{
+router.get('/all' , async(req, res, next)=>{
     try{
         // 첫 화면에 보여줄 저장소 이름 여기에 기재
         const featured_repository_name = "DSC-Sahmyook/Git-Tutorial-V2";
@@ -49,6 +49,33 @@ router.get('/summary' , async(req, res, next)=>{
         });
     }
     catch (e){ res.json(e); }
+});
+
+router.get("/summary", async(req, res, next)=>{
+    try{
+        const summary = await Analytics.fetchSummary();
+        res.json(summary);
+    }
+    catch(e){
+        res.status(500).json(e);
+    }
+});
+
+router.get("/attendances" , async(req,res, next)=>{
+    try{
+        // const summary = await Analytics.fetchSummary();
+        // res.json(summary);
+        const latest_challenge = await Models.Challenge.aggregate([
+            {
+                $sort : { created_at : -1 }
+            }
+        ]);
+        const attendances = await Analytics.fetchAttendance(latest_challenge[0].id);
+        res.json(attendances);
+    }
+    catch(e){
+        res.status(500).json(e);
+    }
 });
 
 router.get("/commits", async(req, res, next)=>{

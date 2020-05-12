@@ -26,6 +26,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // 리액트 파일을 static 경로로 추가
 app.use(express.static(path.resolve(__dirname, './client')));
 
+import cors from 'cors';
+
+app.use(cors());
 app.use('/api/users', usersRouter);
 app.use('/api/analysis' , analysisRouter);
 app.use("/api/challenges", challengesRouter);

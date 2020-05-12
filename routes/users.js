@@ -88,11 +88,23 @@ router.get("/:user_name", async (req, res, next) => {
     const result = await Models.User.findOne({
         login: req.params.user_name.toLowerCase(),
     });
-
-    res.status(200).json({
-        status: "success",
-        data: result,
-    });
+    if(result){
+        res.status(200).json({
+            code : 1,
+            status: "success",
+            message : "조회에 성공했습니다",
+            data: result,
+        });
+    }
+    else{
+        res.status(404).send({
+            code : -1,
+            status: "fail",
+            message : "존재하지 않는 사용자입니다",
+            erorr : new Error("존재하지 않는 사용자입니다")
+            // data: result,
+        });
+    }
 });
 
 // 해당 사용자의 커밋들
