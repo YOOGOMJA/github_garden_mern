@@ -63,7 +63,7 @@ const cron = require('node-cron');
 import {Crawler, Loggers, Analytics} from './db/compute';
 import info from './secure/info.json';
 // s | m | h | d | week | month
-cron.schedule("* * 1 * * *", async ()=>{
+cron.schedule("* * 12 * * *", async ()=>{
   console.log("[SCHEDULER] 데이터 불러오기 시작 ");
   try{
     Loggers.Crawler("스케줄러 실행 시작",info.secret);

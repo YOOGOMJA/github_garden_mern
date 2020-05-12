@@ -164,7 +164,7 @@ const fetchLanguagePopulation = () => {
                 {
                     $group: {
                         _id: {
-                            languge_name: "$languages.name",
+                            language_name: "$languages.name",
                         },
                         // name : "$language.name",
                         rate: {
