@@ -63,19 +63,19 @@ const cron = require('node-cron');
 import {Crawler, Loggers, Analytics} from './db/compute';
 import info from './secure/info.json';
 // s | m | h | d | week | month
-cron.schedule("* * 12 * * *", async ()=>{
-  console.log("[SCHEDULER] 데이터 불러오기 시작 ");
-  try{
-    Loggers.Crawler("스케줄러 실행 시작",info.secret);
-    const crawler_result = await Crawler.fetchEvents(info.secret);
-    const analytics_result = await Analytics.computeEvents();
-    const analytics_result_2 = await Analytics.computeRepos();
-    Loggers.Crawler("스케줄러 실행 종료",info.secret);
-    console.log("[SCHEDULER] 데이터 불러오기 성공");
-  }
-  catch(e){
-    Loggers.Error(e);
-  }
-});
+// cron.schedule("* *  * * *", async ()=>{
+//   console.log("[SCHEDULER] 데이터 불러오기 시작 ");
+//   try{
+//     Loggers.Crawler("스케줄러 실행 시작",info.secret);
+//     const crawler_result = await Crawler.fetchEvents(info.secret);
+//     const analytics_result = await Analytics.computeEvents();
+//     const analytics_result_2 = await Analytics.computeRepos();
+//     Loggers.Crawler("스케줄러 실행 종료",info.secret);
+//     console.log("[SCHEDULER] 데이터 불러오기 성공");
+//   }
+//   catch(e){
+//     Loggers.Error(e);
+//   }
+// });
 
 module.exports = app;

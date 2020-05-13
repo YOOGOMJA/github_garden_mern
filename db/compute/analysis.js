@@ -154,6 +154,132 @@ const fetchAttendance = (challenge_id) => {
     return currentPromise;
 };
 
+// 모든 사용자들의 일별 출석 현황 
+const fetchAttendanceByDate = (challenge_id)=>{
+    const fetchPromise = new Promise(async (resolve, reject)=>{
+        const current_challenge = await Models.Challenge.findOne({
+            id: challenge_id,
+        });
+        if (current_challenge) {
+            if (current_challenge.participants.length > 0) {
+                const allParticipants = await Models.User.aggregate([
+                    {
+                        $match:{
+                            _id : {
+                                $in : current_challenge.participants
+                            }
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: null,
+                            cnt: { $sum: 1 },
+                        },
+                    },
+                    { $project: { _id: 0 } },
+                ]);
+                const allParticipantsCnt = allParticipants.length > 0 ? allParticipants[0].cnt : 0;
+
+                const aggregatedCommits = await Models.Commit.aggregate([
+                    // 일치 조건
+                    {
+                        $match: {
+                            commit_date: {
+                                $gte: current_challenge.start_dt,
+                                $lte: current_challenge.finish_dt,
+                            },
+                            committer: {
+                                $in: current_challenge.participants,
+                            },
+                        },
+                    },
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "committer",
+                            foreignField: "_id",
+                            as: "lookup_committer",
+                        },
+                    },
+                    {
+                        $unwind: "$lookup_committer",
+                    },
+                    // 그룹
+                    {
+                        $group: {
+                            _id: {
+                                committer: "$lookup_committer",
+                                date: "$commit_date_string",
+                            },
+                            count: {
+                                $sum: 1,
+                            },
+                        },
+                    },
+                    // 정렬
+                    {
+                        $sort: {
+                            "_id.committer.login": -1,
+                            "_id.date": -1,
+                        },
+                    },
+                ]);
+
+                // 일자별 정리하기
+                const dates = getAllDatesBetween(
+                    current_challenge.start_dt,
+                    current_challenge.finish_dt
+                );
+                
+                let filtered = [];
+                dates.forEach((date) => {
+                    // dates_templates[date] = 0;
+                    filtered.push({
+                        date : date,
+                        cnt : 0,
+                        all : allParticipantsCnt,
+                        rate : 0,
+                    });
+                });
+                
+                aggregatedCommits.forEach((_commit) => {
+                    if(_commit.count > 0){
+                        let current_date = filtered.find( elem => elem.date === _commit._id.date);
+                        current_date.cnt += 1;
+                    }
+                });
+
+                // 참여율 계산
+                filtered.forEach(date => {
+                    date.rate = date.cnt / date.all * 100;
+                });
+
+                resolve({
+                    code: 1,
+                    status: "SUCCESS",
+                    message: "조회가 성공했습니다",
+                    data: filtered,
+                });
+            } else {
+                reject({
+                    code: -2,
+                    status: "FAIL",
+                    message: "참가자가 등록되지 않았습니다",
+                });
+            }
+        } else {
+            reject({
+                code: -1,
+                status: "FAIL",
+                message: "존재하지 않는 도전 일정입니다",
+            });
+        }
+    });
+
+    return fetchPromise;
+}
+
+// 저장된 저장소들의 언어 사용 분포도
 const fetchLanguagePopulation = () => {
     const fetchPromise = new Promise(async (resolve, reject) => {
         try {
@@ -279,6 +405,60 @@ const fetchSummary = () => {
     });
     return fetchPromise;
 };
+
+// 해당 프로젝트에서 인증한 저장소 
+const fetchFeaturedRepository = (repo_name)=>{
+    const fetchPromise = new Promise(async (resolve, reject) => {
+        try {
+            const aggregatedCommits = await Models.Commit.aggregate([
+                {
+                    $group: {
+                        _id: "$repo",
+                        commit_cnt: { $sum: 1 },
+                    },
+                },
+                {
+                    $sort: {
+                        commit_cnt : -1
+                    }
+                },
+                {
+                    $lookup: {
+                        from :"repositories",
+                        localField: "_id",
+                        foreignField: "_id",
+                        as :"repo"
+                    }
+                },
+                {
+                    $unwind : "$repo"
+                },
+                {
+                    $match:{
+                        'repo.name' : repo_name,
+                    }
+                },  
+            ])
+
+            resolve({
+                code : 1,
+                status : "SUCCESS",
+                message : "조회에 성공했습니다",
+                data : aggregatedCommits.length > 0 ? aggregatedCommits[0] : {}
+            });
+        } catch (e) {
+            reject({
+                code: -1,
+                status: "FAIL",
+                message: "통신 중 오류가 발생했습니다",
+                error : e,
+            });
+        }
+
+        
+    });
+    return fetchPromise;
+}
 
 // 최근 commits이 제일 많은 저장소
 const fetchPopularRepository = () => {
@@ -468,8 +648,10 @@ const computeEvents = () => {
 
 export {
     fetchAttendance,
+    fetchAttendanceByDate,
     fetchLanguagePopulation,
     fetchPopularRepository,
+    fetchFeaturedRepository,
     fetchSummary,
     computeEvents,
     computeRepos,
