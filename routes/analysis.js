@@ -13,15 +13,6 @@ router.get("/", (req, res, next) => {
     res.json("Hello");
 });
 
-router.get("/attendance", async (req, res, next)=>{
-    const result = await Analytics.fetchAttendance("challenge_1586951700146");
-    res.json(result);
-});
-router.get("/attendance/date", async(req, res, next)=>{
-    const result = await Analytics.fetchAttendanceByDate("challenge_1586951700146");
-    res.json(result);
-})
-
 router.get("/languages", async (req, res, next)=>{
     const result = await Analytics.fetchLanguagePopulation();
     res.json(result);
@@ -64,6 +55,16 @@ router.get("/attendances" , async(req,res, next)=>{
         res.status(500).json(e);
     }
 });
+
+router.get("/attendances/date", async(req, res, next)=>{
+    const latest_challenge = await Models.Challenge.aggregate([
+        {
+            $sort : { created_at : -1 }
+        }
+    ]);
+    const result = await Analytics.fetchAttendanceByDate(latest_challenge[0].id);
+    res.json(result);
+})
 
 router.get("/commits", async(req, res, next)=>{
     const all_commits = await Models.Commit.aggregate([

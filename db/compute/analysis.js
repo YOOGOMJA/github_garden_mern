@@ -377,6 +377,12 @@ const fetchSummary = () => {
             }
         );
 
+        const latestChallenge = await Models.Challenge.aggregate([
+            {
+                $sort : { created_at : -1 }
+            }
+        ]);
+
         let allChallengingDates = 0;
         allChallenges.forEach((challenge) => {
             const m_start_dt = challenge.start_dt;
@@ -391,6 +397,14 @@ const fetchSummary = () => {
             }
         });
 
+        let lastestChallengeFromNow = 0;
+        if(latestChallenge.length>0){
+            const m_finish_dt = new moment(latestChallenge[0].finish_dt);
+            const m_now = new moment();
+            console.log(m_finish_dt.format("YYYY-MM-DD"), m_now.format("YYYY-MM-DD"));
+            lastestChallengeFromNow += m_finish_dt.diff(m_now, "day") + 1;
+        }
+
         resolve({
             code: 1,
             status: "SUCCESS",
@@ -400,6 +414,10 @@ const fetchSummary = () => {
                 user_cnt: allUsers[0].cnt,
                 commit_cnt: allCommits[0].cnt,
                 challenge_duration: allChallengingDates,
+                current_challenge : {
+                    left_days : lastestChallengeFromNow,
+                    title : latestChallenge.length > 0 ? latestChallenge[0].title : ""
+                },
             },
         });
     });

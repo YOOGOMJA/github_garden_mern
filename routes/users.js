@@ -62,21 +62,23 @@ router.post("/:user_name", async (req, res, next) => {
                         });
                     }
                 } else {
-                    const current_error = new ErrorLog({
-                        error: err,
-                        created_at: new Date(),
-                    });
-                    current_error.save();
+                    // const current_error = new ErrorLog({
+                    //     error: err,
+                    //     created_at: new Date(),
+                    // });
+                    // current_error.save();
 
-                    res.status(400).json({
-                        status: "failed",
+                    res.json({
+                        code : -2,
+                        status: "FAIL",
                         message: "오류가 발생했습니다",
+                        error : err
                     });
                 }
             }
         );
     } else {
-        res.status(400).json({
+        res.json({
             code: -1,
             status: "FAIL",
             message: "이미 존재하는 사용자 입니다",
