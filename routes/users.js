@@ -31,6 +31,22 @@ router.get("/", async (req, res, next)=>{
     }
 });
 
+router.get('/search', async (req, res, next)=>{
+    const user_name = req.query.user_name || "";
+    const users = await Models.User.find({
+        $or: [
+            {login: {'$regex' : `${user_name}`, '$options' : 'i'} },
+            {name: {'$regex' : `${user_name}`, '$options' : 'i'} },
+        ]
+    });
+    res.json({
+        code : 1,
+        status : 'SUCCESS',
+        message : "조회했습니다",
+        data : users
+    });
+});
+
 router.post("/:user_name", async (req, res, next) => {
     const current_user = await Models.User.findOne({
         login: req.params.user_name,
