@@ -79,6 +79,39 @@ router.post("/", async (req, res, next)=>{
     }    
 });
 
+// 특정 사용자의 도전 목록
+router.get("/users/:user_name", async(req, res, next)=>{
+    try{
+        const current_user = await Models.User.findOne({ login: req.params.user_name });
+        if(current_user){
+            const challenges = await Models.Challenge.find({
+                _id: current_user._id
+            });
+            res.json({
+                code : 1,
+                status : "SUCCESS",
+                message : "조회되었습니다",
+                data: challenges,
+            });
+        }
+        else{
+            res.json({
+                code : -2,
+                status : 'FAIL',
+                message : "존재하지 않는 사용자입니다",
+            });
+        }
+    }
+    catch(e){
+        res.json({
+            code: -1,
+            status : 'FAIL',
+            message : "조회 중 오류가 발생했습니다",
+            error: e,
+        });
+    }
+});
+
 // 특정 도전 기간 정보와 등록된 등록자 목록 
 router.get("/:challenge_id/users", async (req, res, next)=>{
     const current_challenge = await Models.Challenge.findOne({ id : req.params.challenge_id })

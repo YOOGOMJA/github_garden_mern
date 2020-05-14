@@ -7,6 +7,7 @@ var logger = require('morgan');
 import usersRouter from './routes/users';
 import analysisRouter from './routes/analysis';
 import challengesRouter from './routes/challenges';
+import reposRouter from './routes/repos';
 
 // 로드하고 자동으로 실행됨
 import db from "./db/db";
@@ -32,6 +33,7 @@ app.use(cors());
 app.use('/api/users', usersRouter);
 app.use('/api/analysis' , analysisRouter);
 app.use("/api/challenges", challengesRouter);
+app.use('/api/repos', reposRouter);
 
 // 추후 삭제해야 
 const crawlingRouter = require("./routes/crawling").router;
