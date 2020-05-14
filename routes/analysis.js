@@ -41,8 +41,6 @@ router.get("/summary", async(req, res, next)=>{
 
 router.get("/attendances" , async(req,res, next)=>{
     try{
-        // const summary = await Analytics.fetchSummary();
-        // res.json(summary);
         const latest_challenge = await Models.Challenge.aggregate([
             {
                 $sort : { created_at : -1 }
@@ -56,6 +54,22 @@ router.get("/attendances" , async(req,res, next)=>{
     }
 });
 
+router.get("/attendances/latest/users/:user_name", async (req, res, next)=>{
+    try{
+        const latest_challenge = await Models.Challenge.aggregate([
+            {
+                $sort : { created_at : -1 }
+            }
+        ]);
+        const attendances = await Analytics.fetchAttendanceByUser(latest_challenge[0].id, req.params.user_name);
+        
+        res.json(attendances);
+    }
+    catch(e){
+        res.json(e);
+    }
+});
+
 router.get("/attendances/date", async(req, res, next)=>{
     const latest_challenge = await Models.Challenge.aggregate([
         {
@@ -64,7 +78,19 @@ router.get("/attendances/date", async(req, res, next)=>{
     ]);
     const result = await Analytics.fetchAttendanceByDate(latest_challenge[0].id);
     res.json(result);
-})
+});
+
+router.get("/attendances/:challenge_id/users/:user_name", async (req, res, next)=>{
+    console.log('hi');
+    try{
+        const attendances = await Analytics.fetchAttendanceByUser(req.params.challenge_id, req.params.user_name);
+        res.json(attendances);
+    }
+    catch(e){
+        res.json(e);
+    }
+});
+
 
 router.get("/commits", async(req, res, next)=>{
     const all_commits = await Models.Commit.aggregate([

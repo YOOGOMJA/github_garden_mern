@@ -21,6 +21,164 @@ import { fetchRepoLanguages } from "./crawling";
 // 통계 연산 함수 : 정리된 데이터들로부터 데이터를 가져옵니다
 // ================================================================================
 
+const fetchAttendanceByUser = (challenge_id, user_name)=>{
+    const currentPromise = new Promise(async (resolve, reject) => {
+        const current_user = await Models.User.findOne({ login: user_name });
+        const current_challenge = await Models.Challenge.findOne({
+            id: challenge_id,
+        });
+        if (current_challenge && current_user) {
+            if (current_challenge.participants.length > 0) {
+                let areParticipated = false;
+                current_challenge.participants.forEach(participants_id =>{
+                    console.log(participants_id, current_user._id);
+                    if(participants_id.toString() === current_user._id.toString()){ 
+                        areParticipated = true;
+                        console.log("matched");
+                    }
+                });
+
+                if(!areParticipated){
+                    reject({
+                        code : -3,
+                        status : "FAIL",
+                        message : "참여중인 사용자가 아닙니다"
+                    });
+                    return;
+                }
+
+                const aggregatedCommits = await Models.Commit.aggregate([
+                    // 일치 조건
+                    {
+                        $match: {
+                            commit_date: {
+                                $gte: current_challenge.start_dt,
+                                $lte: current_challenge.finish_dt,
+                            },
+                            committer: current_user._id,
+                        },
+                    },
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "committer",
+                            foreignField: "_id",
+                            as: "lookup_committer",
+                        },
+                    },
+                    {
+                        $unwind: "$lookup_committer",
+                    },
+                    // 그룹
+                    {
+                        $group: {
+                            _id: {
+                                committer: "$lookup_committer",
+                                date: "$commit_date_string",
+                            },
+                            count: {
+                                $sum: 1,
+                            },
+                        },
+                    },
+                    // 정렬
+                    {
+                        $sort: {
+                            "_id.committer.login": -1,
+                            "_id.date": -1,
+                        },
+                    },
+                ]);
+
+                // 일자별 정리하기
+                const dates = getAllDatesBetween(
+                    current_challenge.start_dt,
+                    current_challenge.finish_dt
+                );
+                const dates_templates = {};
+                dates.forEach((date) => {
+                    dates_templates[date] = 0;
+                });
+
+                let filtered = [];
+
+                const getIndexFromFiltered = (login) => {
+                    for (let idx = 0; idx < filtered.length; idx++) {
+                        if (filtered[idx].info.login === login) {
+                            return idx;
+                        }
+                    }
+                    return -1;
+                };
+
+                aggregatedCommits.forEach((_commit) => {
+                    const committer_id = _commit._id.committer.login;
+                    let current_idx = getIndexFromFiltered(committer_id);
+                    if (current_idx === -1) {
+                        filtered.push({
+                            info: _commit._id.committer,
+                            attendances_count: 0,
+                            attendances_rate: 0,
+                            attendances: { ...dates_templates },
+                        });
+                        current_idx = filtered.length - 1;
+                    }
+                    filtered[current_idx]["attendances"][_commit._id.date] +=
+                        _commit.count;
+                    filtered[current_idx].attendances_count += 1;
+                });
+
+                // 참여율 계산
+                filtered.forEach((committer) => {
+                    committer.attendances_rate =
+                        (committer.attendances_count /
+                            Object.keys(dates).length) *
+                        100;
+                });
+
+                // 정렬
+                filtered.sort((a, b) => {
+                    return a.attendances_rate > b.attendances_rate
+                        ? -1
+                        : a.attendances_rate < b.attendances_rate
+                        ? 1
+                        : 0;
+                });
+
+                resolve({
+                    code: 1,
+                    status: "SUCCESS",
+                    message: "조회가 성공했습니다",
+                    // data : aggregatedCommits,
+                    data: filtered,
+                });
+            } else {
+                reject({
+                    code: -2,
+                    status: "FAIL",
+                    message: "참가자가 등록되지 않았습니다",
+                });
+            }
+        } else {
+            if(!current_challenge){
+                reject({
+                    code: -1,
+                    status: "FAIL",
+                    message: "존재하지 않는 도전 일정입니다",
+                });
+            }
+            else{
+                reject({
+                    code: -1,
+                    status: "FAIL",
+                    message: "사용자가 존재하지 않습니다",
+                });
+            }
+        }
+    });
+    return currentPromise;
+}
+
 // 프로젝트 당 출석 현황
 const fetchAttendance = (challenge_id) => {
     const currentPromise = new Promise(async (resolve, reject) => {
@@ -600,6 +758,7 @@ const computeEvents = () => {
                                 });
                                 return;
                             }
+                            currentRepository = newRepository;
                         }
                         // 2. 저장소가 존재하면 저장소에 스스로를 추가
                         // 존재하지 않을때만 추가된다.
@@ -666,6 +825,7 @@ const computeEvents = () => {
 
 export {
     fetchAttendance,
+    fetchAttendanceByUser,
     fetchAttendanceByDate,
     fetchLanguagePopulation,
     fetchPopularRepository,
