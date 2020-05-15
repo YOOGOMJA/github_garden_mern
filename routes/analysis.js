@@ -9,26 +9,26 @@ import {Analytics} from '../db/compute';
 
 const router = express.Router();
 
-router.get("/", (req, res, next) => {
-    res.json("Hello");
-});
-
+// 현재 저장된 저장소의 언어 정보를 가져옴
 router.get("/languages", async (req, res, next)=>{
     const result = await Analytics.fetchLanguagePopulation();
     res.json(result);
 });
 
+// 본 프로젝트에서 인증하는 저장소
 router.get("/repo/featured", async(req, res, next)=>{
     const featured_repository_name = "YOOGOMJA/github_garden_mern";
     const featured_repostiory = await Analytics.fetchFeaturedRepository(featured_repository_name);
     res.json(featured_repostiory);
 });
 
+// 가장 활동이 많은 저장소 
 router.get("/repo/popular" , async (req, res, next)=>{
     const popular_repository = await Analytics.fetchPopularRepository();
     res.json(popular_repository);
 });
 
+// 메인 페이지 : 활동 요약
 router.get("/summary", async(req, res, next)=>{
     try{
         const summary = await Analytics.fetchSummary();
@@ -39,7 +39,9 @@ router.get("/summary", async(req, res, next)=>{
     }
 });
 
-router.get("/attendances" , async(req,res, next)=>{
+// 최신 도전 기간에서 모든 사용자들의 출석률
+// TODO : challenge_id를 기준으로 조회하는 항목 추가 되어야 
+router.get("/attendances/" , async(req,res, next)=>{
     try{
         const latest_challenge = await Models.Challenge.aggregate([
             {
@@ -54,6 +56,7 @@ router.get("/attendances" , async(req,res, next)=>{
     }
 });
 
+// 최신 도전 기간에서 특정 사용자의 출석률 
 router.get("/attendances/latest/users/:user_name", async (req, res, next)=>{
     try{
         const latest_challenge = await Models.Challenge.aggregate([
@@ -70,6 +73,7 @@ router.get("/attendances/latest/users/:user_name", async (req, res, next)=>{
     }
 });
 
+// 최신 도전 기간에서 일자별 출석률
 router.get("/attendances/date", async(req, res, next)=>{
     const latest_challenge = await Models.Challenge.aggregate([
         {
@@ -80,6 +84,7 @@ router.get("/attendances/date", async(req, res, next)=>{
     res.json(result);
 });
 
+// 특정 도전 기간에서 특정 사용자의 출석률
 router.get("/attendances/:challenge_id/users/:user_name", async (req, res, next)=>{
     console.log('hi');
     try{
@@ -91,6 +96,7 @@ router.get("/attendances/:challenge_id/users/:user_name", async (req, res, next)
     }
 });
 
+// 모든 커밋 
 router.get("/commits", async(req, res, next)=>{
     const all_commits = await Models.Commit.aggregate([
         {
@@ -122,6 +128,7 @@ router.get("/commits", async(req, res, next)=>{
 });
 
 // TODO: 특정 도전 기간에 참여한 모든 사용자와 참석율
+// deprecated
 router.get("/challenge/:challenge_id/user/", async (req, res, next) => {
     const run_at = new Date();
 
@@ -191,6 +198,7 @@ router.get("/challenge/:challenge_id/user/", async (req, res, next) => {
 });
 
 // 기간 일자별 모든 참가자 출석률
+// deprecated
 router.get("/challenge/:challenge_id/", async (req, res, next) => {
     const current_challenge = await Challenge.findOne({
         id: req.params.challenge_id,

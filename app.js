@@ -37,7 +37,11 @@ app.use('/api/repos', reposRouter);
 
 // 추후 삭제해야 
 const crawlingRouter = require("./routes/crawling").router;
-app.use("/crawl" , crawlingRouter);
+app.use("/api/crawl" , crawlingRouter);
+
+import api_404_router from './routes/api.404';
+// api 경로에서 생기는항목들은 404 처리 
+app.use('/api',api_404_router);
 
 // 이제 모든 주소는 리액트로 보냄
 app.get('*', function(request, response) {

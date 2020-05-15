@@ -9,19 +9,16 @@ import info from "../secure/info.json";
 const router = express.Router();
 const ghClient = github.client();
 
-/* GET users listing. */
+// 사용자 모두 조회
 router.get("/", async (req, res, next)=>{
-    console.log("hello users api!");
     try{
       const result = await Models.User.find();
-      console.log("load complete");
       res.status(200).json({
           status: "success",
           data: result,
       });
     }
     catch(e){
-      console.log("error !" , e);
       res.status(500).json({
         code : -1,
         satus : "FAIL",
@@ -31,6 +28,7 @@ router.get("/", async (req, res, next)=>{
     }
 });
 
+// 사용자 검색
 router.get('/search', async (req, res, next)=>{
     const user_name = req.query.user_name || "";
     const users = await Models.User.find({
@@ -47,6 +45,8 @@ router.get('/search', async (req, res, next)=>{
     });
 });
 
+// 사용자 추가 
+// 사용자 추가 뒤 자동으로 최신 도전 기간에 등록 후 크롤링 수행
 router.post("/:user_name", async (req, res, next) => {
     const current_user = await Models.User.findOne({
         login: req.params.user_name,
@@ -131,6 +131,7 @@ router.post("/:user_name", async (req, res, next) => {
     }
 });
 
+// 특정 사용자 조회
 router.get("/:user_name", async (req, res, next) => {
     const result = await Models.User.findOne({
         login: req.params.user_name.toLowerCase(),
@@ -154,7 +155,7 @@ router.get("/:user_name", async (req, res, next) => {
     }
 });
 
-// 해당 사용자의 커밋들
+// 특정 사용자의 커밋 조회
 router.get("/:user_name/commits", async (req, res, next) => {
     try {
         const current_user = await Models.User.findOne({
@@ -209,7 +210,7 @@ router.get("/:user_name/commits", async (req, res, next) => {
     }
 });
 
-// 해당 사용자의 등록된 repo들
+// 특정 사용자의 등록된 repo들
 router.get("/:user_name/repos", async (req, res, next) => {
     try {
         const current_user = await Models.User.findOne({
@@ -253,7 +254,7 @@ router.get("/:user_name/repos", async (req, res, next) => {
     }
 });
 
-// 해당 사용자가 등록된 도전 기간들
+// 특정 사용자가 등록된 도전 기간들
 router.get("/:user_name/challenges", async (req, res, next) => {
     try {
         const current_user = await Models.User.findOne({
@@ -298,7 +299,7 @@ router.get("/:user_name/challenges", async (req, res, next) => {
     }
 });
 
-// 해당 사용자의 정보를 새로 불러오고 새로 fetch함
+// 특정 사용자의 정보를 새로 불러오고 새로 fetch함
 router.post("/:user_name/fetch", async (req, res, next) => {
     try {
         const current_user = await Models.User.findOne({

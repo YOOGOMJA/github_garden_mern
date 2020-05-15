@@ -3,6 +3,7 @@ import * as Models from '../db/models';
 import moment from 'moment';
 const router = express.Router();
 
+// 특정 사용자의 저장소 정보를 모두 가져옴
 router.get("/users/:user_name", async (req, res, next)=>{
     try{
         const current_user = await Models.User.findOne({ login: req.params.user_name });
