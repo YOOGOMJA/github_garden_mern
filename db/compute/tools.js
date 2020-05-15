@@ -38,6 +38,7 @@ const getUserCommitCountByDate = (data, start_dt, finish_dt)=>{
 }
 
 const getAttendRateByUser = (data, users, start_dt, finish_dt) =>{
+    console.log('called');
     const raw = getUserCommitCountByDate(data, start_dt, finish_dt);
     const user_ids = Object.keys(raw);
     const now = new moment();

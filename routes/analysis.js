@@ -3,7 +3,7 @@ import express from "express";
 import { Event } from "../db/models/events";
 import { Challenge } from "../db/models/challenges";
 import { User } from "../db/models/users";
-import { getAllDatesBetween, getAttendRateByUser } from "../db/compute";
+import { getAllDatesBetween, getAttendRateByUser } from "../db/compute/tools";
 import * as Models from'../db/models';
 import {Analytics} from '../db/compute';
 
@@ -19,7 +19,7 @@ router.get("/languages", async (req, res, next)=>{
 });
 
 router.get("/repo/featured", async(req, res, next)=>{
-    const featured_repository_name = "DSC-Sahmyook/Git-Tutorial-V2";
+    const featured_repository_name = "YOOGOMJA/github_garden_mern";
     const featured_repostiory = await Analytics.fetchFeaturedRepository(featured_repository_name);
     res.json(featured_repostiory);
 });
@@ -90,7 +90,6 @@ router.get("/attendances/:challenge_id/users/:user_name", async (req, res, next)
         res.json(e);
     }
 });
-
 
 router.get("/commits", async(req, res, next)=>{
     const all_commits = await Models.Commit.aggregate([
@@ -167,7 +166,6 @@ router.get("/challenge/:challenge_id/user/", async (req, res, next) => {
                 },
             },
         ]);
-
         const attendanceRate = getAttendRateByUser(
             current_events,
             current_challenge.participants,

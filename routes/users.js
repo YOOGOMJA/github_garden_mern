@@ -70,20 +70,49 @@ router.post("/:user_name", async (req, res, next) => {
                         events_url: body.events_url,
                     });
                     const userResult = await newUser.save();
+
+                    const latestChallenge = await Models.Challenge.aggregate([
+                        {
+                            $sort: { created_at: -1 },
+                        },
+                    ]);
+
+                    // 최근 도전 기간이 있다면, 추가 함
+                    if(latestChallenge.length > 0){
+                        await Models.Challenge.updateOne({
+                            id: latestChallenge[0].id
+                        },
+                        {
+                            $push : { "participants" : newUser }
+                        });
+
+                    }
+
+                    Loggers.Crawler(`사용자 [${req.params.user_name}] 데이터 갱신 시작`, info.secret);
+                    const crawling_result = await Crawler.fetchEvents(
+                        info.secret,
+                        newUser.login
+                    );
+                    const analytics_result_event = await Analytics.computeEvents();
+                    const analytics_result_repo = await Analytics.computeRepos();
+
+                    Loggers.Crawler(`사용자 [${req.params.user_name}] 데이터 갱신 완료`, info.secret);
+
                     if (userResult) {
                         res.status(200).json({
                             code: 1,
                             status: "success",
                             message: "추가되었습니다",
+                            data : {
+                                crawling_result: crawling_result,
+                                analytics_result: {
+                                    event : analytics_result_event,
+                                    repo : analytics_result_repo
+                                }
+                            }
                         });
                     }
                 } else {
-                    // const current_error = new ErrorLog({
-                    //     error: err,
-                    //     created_at: new Date(),
-                    // });
-                    // current_error.save();
-
                     res.json({
                         code : -2,
                         status: "FAIL",
@@ -282,7 +311,8 @@ router.post("/:user_name/fetch", async (req, res, next) => {
                 info.secret,
                 current_user.login
             );
-            const analytics_result = await Analytics.fetch();
+            const analytics_result_event = await Analytics.computeEvents();
+            const analytics_result_repo = await Analytics.computeRepos();
 
             Loggers.Crawler(`사용자 [${req.params.user_name}] 데이터 갱신 완료`, info.secret);
             res.status(200).json({
@@ -290,7 +320,10 @@ router.post("/:user_name/fetch", async (req, res, next) => {
                 status: "SUCCESS",
                 message: "데이터를 새로 가져왔습니다",
                 crawling_result: crawling_result,
-                analytics_result: analytics_result,
+                analytics_result: {
+                    event : analytics_result_event,
+                    repo : analytics_result_repo,
+                },
             });
         } else {
             res.status(400).json({
