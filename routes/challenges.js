@@ -86,6 +86,7 @@ router.post("/", async (req, res, next) => {
         try {
             const result = await new_challenge.save();
             res.json({
+                code : 1,
                 status: "SUCCESS",
                 message: "일정이 추가되었습니다",
                 data: result,

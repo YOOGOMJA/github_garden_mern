@@ -1,7 +1,7 @@
 version: "3.5" # 설치된 docker 버전에 따라 다릅니다!
 services:
   server:
-    container_name: server
+    container_name: github-garden-mern-api
     build: . # Dockerfile이 위치한 경로
     ports:
       - "4000:4000" # 연결할 포트

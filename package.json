@@ -1,10 +1,15 @@
 {
-  "name": "server",
+  "name": "github-garden-mern-api",
+  "description": "MERN Stack 정원사 프로젝트 API 서버",
   "version": "0.0.0",
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
     "nodemon-start": "nodemon -L --exec babel-node ./bin/www"
+  },
+  "repository":{
+    "type" : "git",
+    "url": "https://github.com/YOOGOMJA/github_garden_mern"
   },
   "dependencies": {
     "@babel/core": "^7.9.0",
