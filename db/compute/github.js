@@ -70,3 +70,25 @@ export const fetchRepoLang = (repo_name)=>{
         )
     })
 }
+
+/**
+ * @description github API를 이용해 특정 사용자의 정보를 모두 불려옵니다
+ * @param {string} user_name 데이터를 가져올 사용자의 계정명입니다
+ * @returns {Promise} 결과를 담은 프로미스 객체를 반환합니다
+ */
+export const fetchUser = (user_name)=>{
+    return new Promise((resolve, reject)=>{
+        const _APIClient = github.client(secure_info.github_sha);
+        _APIClient.get(
+            `/users/${user_name}`,{},
+            (err, status , body)=>{
+                if(!err){
+                    resolve({ data : body });
+                }
+                else{
+                    reject({ error : err , status : status});
+                }
+            }
+        )
+    })
+}

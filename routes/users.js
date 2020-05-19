@@ -2,6 +2,7 @@ import express from "express";
 import github from "octonode";
 
 import * as Models from "../db/models";
+import * as GithubAPI from '../db/compute/github';
 import mongoose from 'mongoose';
 
 const db = mongoose.connection;
@@ -55,66 +56,62 @@ router.post("/:user_name", async (req, res, next) => {
         login: req.params.user_name,
     });
     if (!current_user) {
-        ghClient.get(
-            "/users/" + req.params.user_name,
-            {},
-            async (err, status, body, headers) => {
-                if (!err) {
-                    const newUser = new Models.User({
-                        id: body.id,
-                        login: body.login.toLowerCase(),
-                        html_url: body.html_url,
-                        avartar_url: body.avartar_url,
-                        name: body.name,
-                        blog: body.blog,
-                        email: body.email,
-                        bio: body.bio,
-                        api_url: body.url,
-                        events_url: body.events_url,
-                    });
-                    const userResult = await newUser.save();
+        try{
+            const github_user = await GithubAPI.fetchUser(req.params.user_name);
+            const newUser = new Models.User({
+                id: github_user.data.id,
+                // 소문자로 변경하지 않음
+                login: github_user.data.login.toLowerCase(),
+                html_url: github_user.data.html_url,
+                avartar_url: github_user.data.avartar_url,
+                name: github_user.data.name,
+                blog: github_user.data.blog,
+                email: github_user.data.email,
+                bio: github_user.data.bio,
+                api_url: github_user.data.url,
+                events_url: github_user.data.events_url,
+            });
+            const userResult = await newUser.save();
+            const latestChallenge = await Models.Challenge.aggregate([
+                {
+                    $sort: { created_at: -1 },
+                },
+            ]);
 
-                    const latestChallenge = await Models.Challenge.aggregate([
-                        {
-                            $sort: { created_at: -1 },
-                        },
-                    ]);
-
-                    // 최근 도전 기간이 있다면, 추가 함
-                    if(latestChallenge.length > 0){
-                        await Models.Challenge.updateOne({
-                            id: latestChallenge[0].id
-                        },
-                        {
-                            $push : { "participants" : newUser }
-                        });
-
-                    }
-
-                    Loggers.Crawler(`사용자 [${req.params.user_name}] 데이터 갱신 시작`, info.secret);
-                    const _crawling_result = await Crawler.one(req.params.user_name);
-                    Loggers.Crawler(`사용자 [${req.params.user_name}] 데이터 갱신 완료`, info.secret);
-
-                    if (userResult) {
-                        res.status(200).json({
-                            code: 1,
-                            status: "success",
-                            message: "추가되었습니다",
-                            data : {
-                                result : _crawling_result
-                            }
-                        });
-                    }
-                } else {
-                    res.json({
-                        code : -2,
-                        status: "FAIL",
-                        message: "오류가 발생했습니다",
-                        error : err
-                    });
-                }
+            // 최근 도전 기간이 있다면, 추가 함
+            if(latestChallenge.length > 0){
+                await Models.Challenge.updateOne({
+                    id: latestChallenge[0].id
+                },
+                {
+                    $push : { "participants" : newUser }
+                });
             }
-        );
+
+            Loggers.Crawler(`사용자 [${req.params.user_name}] 데이터 갱신 시작`, info.secret);
+            const _crawling_result = await Crawler.one(req.params.user_name);
+            Loggers.Crawler(`사용자 [${req.params.user_name}] 데이터 갱신 완료`, info.secret);
+
+            if (userResult) {
+                res.status(200).json({
+                    code: 1,
+                    status: "success",
+                    message: "추가되었습니다",
+                    data : {
+                        result : _crawling_result
+                    }
+                });
+            }
+        }
+        catch(e){
+            console.log(e);
+            res.json({
+                code : -2,
+                status : "FAIL",
+                message : "오류가 발생했습니다",
+                error : e.error || e.message || e
+            })
+        }
     } else {
         res.json({
             code: -1,
@@ -149,6 +146,7 @@ router.get("/:user_name", async (req, res, next) => {
 });
 
 // 특정 사용자를 삭제 
+// TODO : 사용자 삭제시 저장소 삭제되지 않도록 처리 
 router.delete("/:user_name" , async(req, res, next)=>{
     // 1. 존재하는 사용자인지 확인 
     // 2. 관련 커밋 삭제
