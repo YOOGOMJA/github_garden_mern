@@ -23,26 +23,6 @@ router.get("/fetch" , (req, res, next)=>{
     });
 });
 
-router.post("/:user_name", (req, res, next)=>{
-    // 패스워드가 주어졌을 때 크롤링하도록 함
-    try{
-        const result = Crawler.fetchEvents(req.body.auth_key, req.params.user_name);
-        res.status(200).json({
-            code : 1,
-            status : 'SUCCESS',
-            data : result
-        });
-    }
-    catch(e){
-        res.status(400).json({
-            code : -1,
-            status : "FAIL",
-            message : "조회에 실패했습니다",
-            error : e
-        });
-    }
-});
-
 router.get("/language", async (req,res, next)=>{
     const result = await Crawler.fetchRepoLanguages("YOOGOMJA/github_garden_mern");
     res.json(result);

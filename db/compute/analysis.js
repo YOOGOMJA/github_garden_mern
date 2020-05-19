@@ -838,6 +838,7 @@ const computeEvents = () => {
  * @description 특정 사용자의 pushEvents로부터 커밋, 저장소를 갱신합니다
  * @param {string} user_name 갱신할 사용자의 github login 입니다
  * @returns {Promise} 결과를 반환합니다
+ * @deprecated crawling으로 이동 됨
  */
 const computeUserEvents = (user_name) => {
     const computedPromise = new Promise(async (resolve, reject) => {
@@ -1001,6 +1002,7 @@ const computeUserEvents = (user_name) => {
 /**
  * @description 등록된 모든 사용자의 pushEvents로부터 커밋, 저장소를 갱신합니다
  * @returns {Promise} 결과를 반환합니다
+ * @deprecated crawling으로 이동됨
  */
 const computeAllUsersEvents = ()=>{
     const computedPromise = new Promise(async (resolve, reject)=>{

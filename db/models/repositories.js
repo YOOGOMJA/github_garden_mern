@@ -16,7 +16,7 @@ const RepositoryScheme = mongoose.Schema({
     watchers_count : Number,
     forks_count : Number,
     homepage : String,
-    license : String,
+    license : Object,
 });
 
 const Repository = mongoose.model("Repository", RepositoryScheme);
