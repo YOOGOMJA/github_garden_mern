@@ -3,6 +3,9 @@ import moment from "moment";
 import { getAllDatesBetween } from "./tools";
 import { fetchRepoLanguages } from "./crawling";
 
+import mongoose from 'mongoose';
+const db = mongoose.connection;
+
 // github 데이터를 기반으로 MONGO DB 데이터를 새로 갱신하는 경우 사용됩니다.
 
 // TODO : 모든 등록된 프로젝트 구하기
@@ -21,7 +24,7 @@ import { fetchRepoLanguages } from "./crawling";
 // 통계 연산 함수 : 정리된 데이터들로부터 데이터를 가져옵니다
 // ================================================================================
 
-const fetchAttendanceByUser = (challenge_id, user_name)=>{
+const fetchAttendanceByUser = (challenge_id, user_name) => {
     const currentPromise = new Promise(async (resolve, reject) => {
         const current_user = await Models.User.findOne({ login: user_name });
         const current_challenge = await Models.Challenge.findOne({
@@ -30,19 +33,22 @@ const fetchAttendanceByUser = (challenge_id, user_name)=>{
         if (current_challenge && current_user) {
             if (current_challenge.participants.length > 0) {
                 let areParticipated = false;
-                current_challenge.participants.forEach(participants_id =>{
+                current_challenge.participants.forEach((participants_id) => {
                     console.log(participants_id, current_user._id);
-                    if(participants_id.toString() === current_user._id.toString()){ 
+                    if (
+                        participants_id.toString() ===
+                        current_user._id.toString()
+                    ) {
                         areParticipated = true;
                         console.log("matched");
                     }
                 });
 
-                if(!areParticipated){
+                if (!areParticipated) {
                     reject({
-                        code : -3,
-                        status : "FAIL",
-                        message : "참여중인 사용자가 아닙니다"
+                        code: -3,
+                        status: "FAIL",
+                        message: "참여중인 사용자가 아닙니다",
                     });
                     return;
                 }
@@ -160,14 +166,13 @@ const fetchAttendanceByUser = (challenge_id, user_name)=>{
                 });
             }
         } else {
-            if(!current_challenge){
+            if (!current_challenge) {
                 reject({
                     code: -1,
                     status: "FAIL",
                     message: "존재하지 않는 도전 일정입니다",
                 });
-            }
-            else{
+            } else {
                 reject({
                     code: -1,
                     status: "FAIL",
@@ -177,7 +182,7 @@ const fetchAttendanceByUser = (challenge_id, user_name)=>{
         }
     });
     return currentPromise;
-}
+};
 
 // 프로젝트 당 출석 현황
 const fetchAttendance = (challenge_id) => {
@@ -312,9 +317,9 @@ const fetchAttendance = (challenge_id) => {
     return currentPromise;
 };
 
-// 모든 사용자들의 일별 출석 현황 
-const fetchAttendanceByDate = (challenge_id)=>{
-    const fetchPromise = new Promise(async (resolve, reject)=>{
+// 모든 사용자들의 일별 출석 현황
+const fetchAttendanceByDate = (challenge_id) => {
+    const fetchPromise = new Promise(async (resolve, reject) => {
         const current_challenge = await Models.Challenge.findOne({
             id: challenge_id,
         });
@@ -322,11 +327,11 @@ const fetchAttendanceByDate = (challenge_id)=>{
             if (current_challenge.participants.length > 0) {
                 const allParticipants = await Models.User.aggregate([
                     {
-                        $match:{
-                            _id : {
-                                $in : current_challenge.participants
-                            }
-                        }
+                        $match: {
+                            _id: {
+                                $in: current_challenge.participants,
+                            },
+                        },
                     },
                     {
                         $group: {
@@ -336,7 +341,8 @@ const fetchAttendanceByDate = (challenge_id)=>{
                     },
                     { $project: { _id: 0 } },
                 ]);
-                const allParticipantsCnt = allParticipants.length > 0 ? allParticipants[0].cnt : 0;
+                const allParticipantsCnt =
+                    allParticipants.length > 0 ? allParticipants[0].cnt : 0;
 
                 const aggregatedCommits = await Models.Commit.aggregate([
                     // 일치 조건
@@ -388,28 +394,30 @@ const fetchAttendanceByDate = (challenge_id)=>{
                     current_challenge.start_dt,
                     current_challenge.finish_dt
                 );
-                
+
                 let filtered = [];
                 dates.forEach((date) => {
                     // dates_templates[date] = 0;
                     filtered.push({
-                        date : date,
-                        cnt : 0,
-                        all : allParticipantsCnt,
-                        rate : 0,
+                        date: date,
+                        cnt: 0,
+                        all: allParticipantsCnt,
+                        rate: 0,
                     });
                 });
-                
+
                 aggregatedCommits.forEach((_commit) => {
-                    if(_commit.count > 0){
-                        let current_date = filtered.find( elem => elem.date === _commit._id.date);
+                    if (_commit.count > 0) {
+                        let current_date = filtered.find(
+                            (elem) => elem.date === _commit._id.date
+                        );
                         current_date.cnt += 1;
                     }
                 });
 
                 // 참여율 계산
-                filtered.forEach(date => {
-                    date.rate = date.cnt / date.all * 100;
+                filtered.forEach((date) => {
+                    date.rate = (date.cnt / date.all) * 100;
                 });
 
                 resolve({
@@ -435,7 +443,7 @@ const fetchAttendanceByDate = (challenge_id)=>{
     });
 
     return fetchPromise;
-}
+};
 
 // 저장된 저장소들의 언어 사용 분포도
 const fetchLanguagePopulation = () => {
@@ -537,8 +545,8 @@ const fetchSummary = () => {
 
         const latestChallenge = await Models.Challenge.aggregate([
             {
-                $sort : { created_at : -1 }
-            }
+                $sort: { created_at: -1 },
+            },
         ]);
 
         let allChallengingDates = 0;
@@ -556,10 +564,13 @@ const fetchSummary = () => {
         });
 
         let lastestChallengeFromNow = 0;
-        if(latestChallenge.length>0){
+        if (latestChallenge.length > 0) {
             const m_finish_dt = new moment(latestChallenge[0].finish_dt);
             const m_now = new moment();
-            console.log(m_finish_dt.format("YYYY-MM-DD"), m_now.format("YYYY-MM-DD"));
+            console.log(
+                m_finish_dt.format("YYYY-MM-DD"),
+                m_now.format("YYYY-MM-DD")
+            );
             lastestChallengeFromNow += m_finish_dt.diff(m_now, "day") + 1;
         }
 
@@ -572,9 +583,12 @@ const fetchSummary = () => {
                 user_cnt: allUsers[0].cnt,
                 commit_cnt: allCommits[0].cnt,
                 challenge_duration: allChallengingDates,
-                current_challenge : {
-                    left_days : lastestChallengeFromNow,
-                    title : latestChallenge.length > 0 ? latestChallenge[0].title : ""
+                current_challenge: {
+                    left_days: lastestChallengeFromNow,
+                    title:
+                        latestChallenge.length > 0
+                            ? latestChallenge[0].title
+                            : "",
                 },
             },
         });
@@ -582,8 +596,8 @@ const fetchSummary = () => {
     return fetchPromise;
 };
 
-// 해당 프로젝트에서 인증한 저장소 
-const fetchFeaturedRepository = (repo_name)=>{
+// 해당 프로젝트에서 인증한 저장소
+const fetchFeaturedRepository = (repo_name) => {
     const fetchPromise = new Promise(async (resolve, reject) => {
         try {
             const aggregatedCommits = await Models.Commit.aggregate([
@@ -595,46 +609,44 @@ const fetchFeaturedRepository = (repo_name)=>{
                 },
                 {
                     $sort: {
-                        commit_cnt : -1
-                    }
+                        commit_cnt: -1,
+                    },
                 },
                 {
                     $lookup: {
-                        from :"repositories",
+                        from: "repositories",
                         localField: "_id",
                         foreignField: "_id",
-                        as :"repo"
-                    }
+                        as: "repo",
+                    },
                 },
                 {
-                    $unwind : "$repo"
+                    $unwind: "$repo",
                 },
                 {
-                    $match:{
-                        'repo.name' : repo_name,
-                    }
-                },  
-            ])
+                    $match: {
+                        "repo.name": repo_name,
+                    },
+                },
+            ]);
 
             resolve({
-                code : 1,
-                status : "SUCCESS",
-                message : "조회에 성공했습니다",
-                data : aggregatedCommits.length > 0 ? aggregatedCommits[0] : {}
+                code: 1,
+                status: "SUCCESS",
+                message: "조회에 성공했습니다",
+                data: aggregatedCommits.length > 0 ? aggregatedCommits[0] : {},
             });
         } catch (e) {
             reject({
                 code: -1,
                 status: "FAIL",
                 message: "통신 중 오류가 발생했습니다",
-                error : e,
+                error: e,
             });
         }
-
-        
     });
     return fetchPromise;
-}
+};
 
 // 최근 commits이 제일 많은 저장소
 const fetchPopularRepository = () => {
@@ -649,38 +661,36 @@ const fetchPopularRepository = () => {
                 },
                 {
                     $sort: {
-                        commit_cnt : -1
-                    }
+                        commit_cnt: -1,
+                    },
                 },
                 {
                     $lookup: {
-                        from :"repositories",
+                        from: "repositories",
                         localField: "_id",
                         foreignField: "_id",
-                        as :"repo"
-                    }
+                        as: "repo",
+                    },
                 },
                 {
-                    $unwind : "$repo"
-                }
-            ])
+                    $unwind: "$repo",
+                },
+            ]);
 
             resolve({
-                code : 1,
-                status : "SUCCESS",
-                message : "조회에 성공했습니다",
-                data : aggregatedCommits.length > 0 ? aggregatedCommits[0] : {}
+                code: 1,
+                status: "SUCCESS",
+                message: "조회에 성공했습니다",
+                data: aggregatedCommits.length > 0 ? aggregatedCommits[0] : {},
             });
         } catch (e) {
             reject({
                 code: -1,
                 status: "FAIL",
                 message: "통신 중 오류가 발생했습니다",
-                error : e,
+                error: e,
             });
         }
-
-        
     });
     return fetchPromise;
 };
@@ -721,6 +731,7 @@ const computeRepos = () => {
 };
 
 // 이벤트로부터 커밋정보와 저장소 정보, 기여자 정보를 가져옴
+// WILL DEPRECATE
 const computeEvents = () => {
     const fetchPromise = new Promise((resolve, reject) => {
         const allEvents = Models.Event.find()
@@ -823,6 +834,203 @@ const computeEvents = () => {
     return fetchPromise;
 };
 
+/**
+ * @description 특정 사용자의 pushEvents로부터 커밋, 저장소를 갱신합니다
+ * @param {string} user_name 갱신할 사용자의 github login 입니다
+ * @returns {Promise} 결과를 반환합니다
+ */
+const computeUserEvents = (user_name) => {
+    const computedPromise = new Promise(async (resolve, reject) => {
+        const session = await db.startSession();
+        session.startTransaction();
+        let event_result = [];
+        let commit_result = [];
+        let repo_result = [];
+        
+        try {
+            if (!user_name) {
+                throw new Error("사용자 명이 주어지지 않았습니다");
+            }
+            // 1 . 존재하는 사용자인지 확인
+            const _currentUser = await Models.User.findOne({
+                login: user_name,
+            });
+            if (_currentUser) {
+                // 2. 사용자의 이벤트를 모두 불러옴 
+                const _events = await Models.Event.aggregate([
+                    {
+                        $match: {
+                            actor: _currentUser._id,
+                        },
+                    },
+                ]);
+                // 3. 현재 사용자의 이벤트를 한건씩 읽어들임
+                for(const event of _events){
+                    let eventRepo = await Models.Repository.findOne({
+                        name : event.repo.name
+                    });
+                    // 3.1. 이벤트의 저장소 정보를 가져옴
+                    if(!eventRepo){    
+                        // 3.1.1. 현재 이벤트의 타겟 저장소가 DB에 존재하지 않는 경우 
+                        // 생성 처리 
+                        const newRepo = new Models.Repository({
+                            id : event.repo.id,
+                            name : event.repo.name,
+                            // 생성 후 스스로를 contributor로 추가
+                            contributor : [_currentUser],
+                        });
+                        try{
+                            // 3.1.1.1. 디비에 새로운 저장소를 추가
+                            await newRepo.save();
+                            eventRepo = newRepo;
+                            repo_result.push({
+                                target : newRepo.name,
+                                action_type : 'ADD'
+                            });
+                        }
+                        catch(e){
+                            repo_result.push({
+                                target : newRepo.name,
+                                action_type : 'ERROR'
+                            });
+                            // 3.1.1.2. 저장소 추가가 실패하면 모든 행동을 취소 처리 함
+                            throw new Error(e.message || e);
+                        }
+                    }
+                    else{
+                        // 3.1.2. 저장소가 존재한다면 스스로를 추가 
+                        // : 이미 추가된 경우 자동으로 무시된다
+                        const updateRepoResult = await Models.Repository.updateOne({
+                            name : eventRepo.name,
+                        },{
+                            $addToSet:{
+                                contributor: _currentUser
+                            }
+                        });
+                        repo_result.push({
+                            target : eventRepo.name,
+                            action_type : 'UPDATE',
+                            data : updateRepoResult
+                        });
+                    }
+                    
+                    // 3.2. 이벤트 안의 커밋들을 불러옴 
+                    for(const commit of event.payload.commits){
+                        // 3.2.1. 중복 커밋이 있는지 확인
+                        const duplicatedCommit = await Models.Commit.findOne({
+                            sha : commit.sha,
+                            committer : _currentUser,
+                        });
+                        if(!duplicatedCommit){
+                            // 3.2.1.1. 새로운 커밋 생성
+                            const newCommit = new Models.Commit({
+                                sha : commit.sha,
+                                author : commit.author,
+                                message : commit.message,
+                                commit_date : event.created_at,
+                                commit_date_string: new moment(
+                                    event.created_at
+                                ).format("YYYY-MM-DD"),
+                                committer : _currentUser,
+                                repo : eventRepo
+                            });
+
+                            try{
+                                await newCommit.save();
+                                commit_result.push({
+                                    target : newCommit.sha,
+                                    repo : eventRepo.name,
+                                    action_type : "ADD"
+                                });
+                            }
+                            catch(e){
+                                commit_result.push({
+                                    target : newCommit.sha,
+                                    repo : eventRepo.name,
+                                    action_type : "ERROR"
+                                });
+                                throw new Error(e.message || e);
+                            }
+                        }
+                    } 
+
+                    // 3.3. 이벤트 탐색 종료 
+                    event_result.push({
+                        target : event.id,
+                        action_type : 'ADD',
+                    });
+                }
+
+                // 4. 갱신 완료 처리 후 트랜잭션 커밋 
+                session.commitTransaction();
+                resolve({
+                    code: 1,
+                    status: "SUCCESS",
+                    message: "갱신이 성공했습니다",
+                    result :{
+                        event : event_result,
+                        repo : repo_result,
+                        commit : commit_result
+                    }
+                });
+            } else {
+                session.abortTransaction();
+                reject({
+                    code: -2,
+                    status: "FAIL",
+                    message: "존재하지 않는 사용자입니다",
+                });
+            }
+        } catch (e) {
+            console.log(e.message);
+            session.abortTransaction();
+            reject({
+                code: -1,
+                status: "FAIL",
+                message: "통신 중 오류가 발생했습니다",
+                error: e.message || e,
+            });
+        }
+        finally{
+            session.endSession();
+        }
+    });
+    return computedPromise;
+};
+
+/**
+ * @description 등록된 모든 사용자의 pushEvents로부터 커밋, 저장소를 갱신합니다
+ * @returns {Promise} 결과를 반환합니다
+ */
+const computeAllUsersEvents = ()=>{
+    const computedPromise = new Promise(async (resolve, reject)=>{
+        try{
+            let _result = [];
+            const allUsers = await Models.User.find();
+            for(const user of allUsers){
+                const computeUserEventResult = await computeUserEvents(user.login);
+                _result.push(computeUserEventResult);
+            }
+            resolve({
+                code : 1,
+                status : "SUCCESS",
+                message : "모든 유저의 이벤트 갱신이 완료되었습니다",
+                result : _result
+            })
+        }
+        catch(e){
+            reject({
+                code : -1,
+                status : "FAIL",
+                message : "갱신 중 에러가 발생했습니다",
+                error : e.message || e
+            });
+        }
+    });
+
+    return computedPromise;
+}
+
 export {
     fetchAttendance,
     fetchAttendanceByUser,
@@ -833,4 +1041,6 @@ export {
     fetchSummary,
     computeEvents,
     computeRepos,
+    computeUserEvents,
+    computeAllUsersEvents,
 };

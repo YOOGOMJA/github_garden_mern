@@ -10,13 +10,28 @@ router.get("/users/:user_name", async (req, res, next)=>{
         if(current_user){
             const repos = await Models.Repository.find({
                 contributor : current_user._id
-            });
-            res.json({
-                code : 1,
-                status : "SUCCESS",
-                message : "조회되었습니다",
-                data: repos,
-            });
+            })
+            .populate('contributor')
+            .exec((err, data)=>{
+                if(!err){
+                    res.json({
+                        code : 1,
+                        status : "SUCCESS",
+                        message : "조회되었습니다",
+                        data: data,
+                    });
+                }
+                else{
+                    res.json({
+                        code : -3,
+                        status : 'FAIL',
+                        message : "조회 중 오류가 발생했습니다",
+                        error : err.message,
+                    });
+                }
+            })
+            
+            
         }
         else{
             res.json({

@@ -1,7 +1,7 @@
 import express from "express";
 import * as Models from "../db/models";
 import moment from "moment";
-import * as _lib_challenge from '../lib/challenge';
+import * as _lib_challenge from "../lib/challenge";
 const router = express.Router();
 
 // 모든 도전 기간 목록
@@ -61,36 +61,36 @@ router.get("/latest", async (req, res, next) => {
         }
     } catch (e) {
         res.json({
-            code : -2,
-            status : "FAIL",
-            message : "조회 중 오류가 발생했습니다",
-            error : e
+            code: -2,
+            status: "FAIL",
+            message: "조회 중 오류가 발생했습니다",
+            error: e,
         });
     }
 });
 
 // 새로운 도전 기간을 등록
 router.post("/", async (req, res, next) => {
-    console.log(req.body)
+    console.log(req.body);
     const valid = _lib_challenge.valid(req.body);
-    if(valid.result){
+    if (valid.result) {
         const new_challenge = new Models.Challenge({
             id: "challenge_" + new Date().getTime(),
             created_at: new Date(),
         });
 
-        valid.validated.map(item=>{
+        valid.validated.map((item) => {
             new_challenge[item.name] = item.value;
         });
 
         try {
             const result = await new_challenge.save();
             res.json({
-                code : 1,
+                code: 1,
                 status: "SUCCESS",
                 message: "일정이 추가되었습니다",
                 data: result,
-                valid : valid,
+                valid: valid,
             });
         } catch (e) {
             res.status(400).json({
@@ -99,98 +99,92 @@ router.post("/", async (req, res, next) => {
                 message: "데이터 추가 중 오류가 발생했습니다",
             });
         }
-    }
-    else{
+    } else {
         res.json({
-            code : -1,
-            status : "FAIL",
-            message : "주어진 데이터가 올바르지 않습니다",
-            error : valid.error
-        })
+            code: -1,
+            status: "FAIL",
+            message: "주어진 데이터가 올바르지 않습니다",
+            error: valid.error,
+        });
     }
 });
 
 // 주어진 도전 정보의 일자를 수정하거나, 이름을 수정합니다
-router.put("/:challenge_id", async(req, res, next)=>{
-    try{
+router.put("/:challenge_id", async (req, res, next) => {
+    try {
         const current_challenge = await Models.Challenge.findOne({
-            id: req.params.challenge_id
+            id: req.params.challenge_id,
         });
-        if(current_challenge){
+        if (current_challenge) {
             const valid = _lib_challenge.valid(req.body, current_challenge, {
-                title : false,
+                title: false,
                 start_dt: false,
                 finish_dt: false,
             });
-            if(valid.result){
-                valid.validated.map(item=>{
+            if (valid.result) {
+                valid.validated.map((item) => {
                     current_challenge[item.name] = item.value;
                 });
                 const result = await current_challenge.save();
                 res.json({
-                    code : 1,
+                    code: 1,
                     status: "SUCCESS",
-                    message :"수정되었습니다",
-                    data : result,
+                    message: "수정되었습니다",
+                    data: result,
                 });
-            }
-            else{
+            } else {
                 res.json({
-                    code : -3,
-                    status : "FAIL",
-                    message : "주어진 데이터가 올바르지 않습니다",
-                    error : valid.error
+                    code: -3,
+                    status: "FAIL",
+                    message: "주어진 데이터가 올바르지 않습니다",
+                    error: valid.error,
                 });
             }
-        }
-        else{
+        } else {
             res.json({
-                code : -2,
-                status : "FAIL",
-                message : "존재하지 않는 도전 기간입니다",
-            })
+                code: -2,
+                status: "FAIL",
+                message: "존재하지 않는 도전 기간입니다",
+            });
         }
-    }
-    catch(e){
+    } catch (e) {
         res.json({
-            code : -1,
-            status :"FAIL",
-            message : "통신 중 오류가 발생했습니다",
-            error : e
-        })
+            code: -1,
+            status: "FAIL",
+            message: "통신 중 오류가 발생했습니다",
+            error: e,
+        });
     }
 });
 
 // 해당 도전 기간을 삭제
-router.delete('/:challenge_id' , async (req, res, next)=>{
-    try{
+router.delete("/:challenge_id", async (req, res, next) => {
+    try {
         const current_challenge = await Models.Challenge.findOne({
-            id : req.params.challenge_id
+            id: req.params.challenge_id,
         });
-        if(current_challenge){
+        if (current_challenge) {
             const result = await current_challenge.delete();
             res.json({
-                code : 1,
-                status : "SUCCESS",
-                message : "삭제되었습니다",
-                data : result,
-            })
-        }
-        else{
+                code: 1,
+                status: "SUCCESS",
+                message: "삭제되었습니다",
+                data: result,
+            });
+        } else {
             res.json({
-                code : -2,
-                status : "FAIL",
-                message : "존재하지 않는 도전 기간입니다",
-            })
+                code: -2,
+                status: "FAIL",
+                message: "존재하지 않는 도전 기간입니다",
+            });
         }
-    }
-    catch(e){
+    } catch (e) {
         res.json({
-            code : -1,
-            status : "FAIL",
-            message : "통신 중 오류가 발생했습니다",
-            error : e,
-        })
+            code: -1,
+            status: "FAIL",
+            message: "통신 중 오류가 발생했습니다",
+            error: e,
+        });
     }
 });
 
@@ -201,14 +195,63 @@ router.get("/users/:user_name", async (req, res, next) => {
             login: req.params.user_name,
         });
         if (current_user) {
-            const challenges = await Models.Challenge.find({
-                _id: current_user._id,
-            });
+            // const challenges = await Models.Challenge.find({
+            //     participants: current_user._id,
+            // });
+            const challenges = await Models.Challenge.aggregate([
+                {
+                    $match: {
+                        participants: current_user._id,
+                    },
+                },
+                {
+                    $sort : {
+                        start_dt : -1,
+                        finish_dt: -1
+                    }
+                }
+            ]);
             res.json({
                 code: 1,
                 status: "SUCCESS",
                 message: "조회되었습니다",
                 data: challenges,
+            });
+        } else {
+            res.json({
+                code: -2,
+                status: "FAIL",
+                message: "존재하지 않는 사용자입니다",
+            });
+        }
+    } catch (e) {
+        res.json({
+            code: -1,
+            status: "FAIL",
+            message: "조회 중 오류가 발생했습니다",
+            error: e,
+        });
+    }
+});
+
+router.delete("/:challenge_id/users/:user_name", async (req, res, next)=>{
+    try {
+        const current_user = await Models.User.findOne({
+            login: req.params.user_name,
+        });
+        if (current_user) {
+            const result = await Models.Challenge.updateOne({
+                id : req.params.challenge_id,
+            },{
+                $pull:{
+                    participants: current_user._id
+                }
+            });
+            res.json({
+                code: 1,
+                status: "SUCCESS",
+                message: "삭제되었습니다",
+                data: result,
             });
         } else {
             res.json({

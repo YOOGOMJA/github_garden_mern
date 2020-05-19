@@ -276,6 +276,17 @@ router.post("/:user_name/fetch", async (req, res, next) => {
     }
 });
 
+router.post("/:user_name/fetch2" , async(req, res, next)=>{
+    try{
+        const result = await Crawler.all();
+        res.json(result);
+    }
+    catch(e){
+        res.json(e);
+    }
+    
+});
+
 // ######################################################################
 // DEPRECATED 
 // DATE : 2020.05.16
