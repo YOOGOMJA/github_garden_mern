@@ -66,7 +66,7 @@ app.use(function(err, req, res, next) {
 
 // 스케줄러 설정
 const cron = require('node-cron');
-import {Crawler, Loggers, Analytics} from './db/compute';
+import {Crawler, Analytics} from './db/compute';
 import info from './secure/info.json';
 // s | m | h | d | week | month
 // cron.schedule("* 1 * * * *", async ()=>{

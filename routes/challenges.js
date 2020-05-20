@@ -41,6 +41,9 @@ router.get("/", async (req, res, next) => {
 router.get("/latest", async (req, res, next) => {
     try {
         const latestChallenge = await Models.Challenge.aggregate([
+            { 
+                $match : { is_featured : true }
+            },
             {
                 $sort: { created_at: -1 },
             },
@@ -71,12 +74,12 @@ router.get("/latest", async (req, res, next) => {
 
 // 새로운 도전 기간을 등록
 router.post("/", async (req, res, next) => {
-    console.log(req.body);
     const valid = _lib_challenge.valid(req.body);
     if (valid.result) {
         const new_challenge = new Models.Challenge({
             id: "challenge_" + new Date().getTime(),
             created_at: new Date(),
+            is_featured : false,
         });
 
         valid.validated.map((item) => {
@@ -105,6 +108,44 @@ router.post("/", async (req, res, next) => {
             status: "FAIL",
             message: "주어진 데이터가 올바르지 않습니다",
             error: valid.error,
+        });
+    }
+});
+
+router.put("/:challenge_id/featured" , async (req, res, next)=>{
+    try {
+        const current_challenge = await Models.Challenge.findOne({
+            id: req.params.challenge_id,
+        });
+        if (current_challenge) {
+            if(Object.keys(req.body).indexOf('is_featured') >= 0){
+                if(req.body.is_featured){
+                    // 인증 처리 하는 경우 
+                    const _ChallengeFeaturedAlready = await Models.Challenge.findOne({
+                        is_featured : true
+                    });
+                    if(_ChallengeFeaturedAlready){
+                        throw new Error("이미 인증된 도전 기간이 있습니다");
+                    }
+                }
+                current_challenge.is_featured = req.body.is_featured;
+                await current_challenge.save();
+                res.json({
+                    code : 1,
+                    status : 'SUCCESS',
+                    message : '수정 되었습니다',
+                });
+            }   
+            else{ throw new Error("인증 여부가 주어지지 않았습니다");  }
+        } else {
+            throw new Error("존재하지 않는 도전 기간입니다");
+        }
+    } catch (e) {
+        res.json({
+            code: -1,
+            status: "FAIL",
+            message: "통신 중 오류가 발생했습니다",
+            error: e.message || e,
         });
     }
 });
@@ -195,9 +236,6 @@ router.get("/users/:user_name", async (req, res, next) => {
             login: req.params.user_name,
         });
         if (current_user) {
-            // const challenges = await Models.Challenge.find({
-            //     participants: current_user._id,
-            // });
             const challenges = await Models.Challenge.aggregate([
                 {
                     $match: {
@@ -206,6 +244,7 @@ router.get("/users/:user_name", async (req, res, next) => {
                 },
                 {
                     $sort : {
+                        is_featured : -1,
                         start_dt : -1,
                         finish_dt: -1
                     }

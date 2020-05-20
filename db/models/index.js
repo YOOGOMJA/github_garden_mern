@@ -1,19 +1,15 @@
-import { AuthKey } from './auth_key';
 import { Challenge } from './challenges';
-import { CrawlingLog } from './crawling_log';
-import { ErrorLog } from './error_log';
 import { Event } from './events';
 import { User } from './users';
 import { Commit } from './commits';
 import { Repository } from './repositories';
 
+import { LogFetchGithubAPI } from './logsFetchGithubAPI';
 export {
-    AuthKey,
     Challenge,
-    CrawlingLog,
-    ErrorLog,
     Event,
     User,
     Commit,
     Repository,
+    LogFetchGithubAPI
 };

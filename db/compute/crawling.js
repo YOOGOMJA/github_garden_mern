@@ -1,15 +1,12 @@
 import * as Models from "../models";
 
-import github from "octonode";
-import keys from "../../secure/auth_keys.json";
-import secure_info from "../../secure/info.json";
-import * as Loggers from "./loggers";
 import moment from "moment";
-
 import * as GithubAPI from "./github";
 
 import mongoose, { modelNames } from "mongoose";
 const db = mongoose.connection;
+
+import * as _Logger from '../../lib/logger/';
 
 // github API를 사용해야하는 기능들은 여기에 모두 모아둡니다
 
@@ -346,6 +343,25 @@ const computeUserEvents = (user_name) => {
                 login: user_name,
             });
             if (_currentUser) {
+                // 2.0. 이전 조회 기록이 있는지 확인 (추가됨)
+                // 이전 조회 기록이 있을 경우 그 이후부터 갱신함 
+                let _additional_options = [];
+                const _fetchLog = await Models.LogFetchGithubAPI.aggregate([
+                    { $match : { 'user' : _currentUser } },
+                    { $sort : { 'created_at' : -1 } },
+                    { $limit : 1 },
+                ]);
+                if(_fetchLog.length === 1){
+                    const last_fetch_date = moment(_fetchLog[0].created_at);
+                    _additional_options.push({
+                        $match : {
+                            created_at : {
+                                $gte : last_fetch_date.toDate()
+                            }
+                        }
+                    });
+                }
+
                 // 2. 사용자의 이벤트를 모두 불러옴
                 const _events = await Models.Event.aggregate([
                     {
@@ -353,6 +369,7 @@ const computeUserEvents = (user_name) => {
                             actor: _currentUser._id,
                         },
                     },
+                    ..._additional_options,
                 ]);
                 // 3. 현재 사용자의 이벤트를 한건씩 읽어들임
                 for (const event of _events) {
@@ -525,19 +542,38 @@ const computeAllUsersEvents = () => {
 // ================================================================
 
 /**
- * @description 사용자의 모든 정보를 갱신합니다
+ * @description 사용자의 모든 정보를 갱신합니다. 마지막 갱신 후 최소 한시간이 지난 후 다시 갱신할 수 있습니다
  * @param {string} user_name 정보를 가져올 사용자의 github login입니다
  * @returns {Promise} 결과를 담은 프로미스 객체를 반환합니다
  */
 export const one = (user_name) => {
     return new Promise(async (resolve, reject) => {
         try {
+            const _user = await Models.User.findOne({ login: user_name });
+            if(_user){
+                const _logs = await Models.LogFetchGithubAPI.aggregate([
+                    { $match : { user : _user } },
+                    { $sort : { created_at : -1 } },
+                    { $limit : 1 }
+                ]);
+                if(_logs.length === 1){
+                    // 로그가 존재
+                    const mNow = moment();
+                    const mLastFetchedDt = moment(_logs[0].created_at);
+                    if(mNow.diff(mLastFetchedDt, 'minutes') <= 60){
+                        // 1시간 안에 다시 조회하는 경우 
+                        throw new Error("마지막 갱신 후 최소 한 시간이 지난 후 다시 갱신할 수 있습니다");
+                    }
+                }
+            }
             // 1. 깃허브 API로부터 이벤트를 불러옴
             const _fetchEvents = await fetchUserEvents(user_name);
             // 2. 불러온 이벤트로부터 커밋 , 저장소를 생성
             const _computeEvents = await computeUserEvents(user_name);
             // 3. 생성된 저장소의 추가 정보와 언어 정보를 갱신
             const _fetchReposInfo = await fetchUserReposAllInfo(user_name);
+            // 4. 해당 사용자 조회 로그 남김
+            await _Logger.FetchGithubAPI(user_name);
             resolve({
                 code: 1,
                 status: "SUCCESS",
@@ -553,25 +589,40 @@ export const one = (user_name) => {
                 code: -1,
                 status: "ERROR",
                 message: "갱신 중 오류가 발생했습니다",
-                error: e,
+                error: e.message || e,
             });
         }
     });
 };
 
 /**
- * @description 모든 사용자의 모든 정보를 갱신합니다
+ * @description 모든 사용자의 모든 정보를 갱신합니다. 마지막 갱신 후 최소 세시간 후 다시 갱신할 수 있습니다
  * @returns {Promise} 결과를 담은 프로미스 객체를 반환합니다
  */
 export const all = () => {
     return new Promise(async (resolve, reject) => {
         try {
+            const _logs = await Models.LogFetchGithubAPI.aggregate([
+                { $match : { user : 'ALL' } },
+                { $sort : { created_at : -1 } },
+                { $limit : 1 },
+            ]);
+
+            if(_logs.length === 1){
+                const mNow = moment();
+                const mLastFetchedDt = moment(_logs[0].created_at);
+                if(mNow.diff(mLastFetchedDt, 'minutes') <= 90){
+                    // 1시간 안에 다시 조회하는 경우 
+                    throw new Error("마지막 갱신 후 최소 세 시간이 지난 후 다시 갱신할 수 있습니다");
+                }
+            }
             // 1. 깃허브 API로부터 이벤트를 불러옴
             const _fetchEvents = await fetchAllUsersEvents();
             // 2. 불러온 이벤트로부터 커밋 , 저장소를 생성
             const _computeEvents = await computeAllUsersEvents();
             // 3. 생성된 저장소의 추가 정보와 언어 정보를 갱신
             const _fetchReposInfo = await fetchAllUsersReposAllInfo();
+            await _Logger.FetchGithubAPI();
             resolve({
                 code: 1,
                 status: "SUCCESS",
