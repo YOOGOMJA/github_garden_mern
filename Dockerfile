@@ -31,4 +31,5 @@ COPY ./ /usr/src/app/
 # 실제로 앱을 실행시키는 커맨드가 들어갑니다.
 # CMD ["yarn", "start"]
 # nodemon --exec babel-node index.js
-CMD ["nodemon","-L" , "--exec" , "babel-node" , "./bin/www"]
+# CMD ["export","NODE_ENV=production","nodemon","-L" , "--exec" , "babel-node" , "./bin/www"]
+CMD ["yarn" , "run" , "nodemon_prod"]
