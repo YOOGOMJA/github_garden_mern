@@ -4,7 +4,7 @@ services:
     container_name: github-garden-mern-api
     build: . # Dockerfile이 위치한 경로
     ports:
-      - "4000:80" # 연결할 포트
+      - "4000:4000" # 연결할 포트
     restart: on-failure
     volumes:
         - ./:/usr/src/app
