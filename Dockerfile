@@ -32,4 +32,4 @@ COPY ./ /usr/src/app/
 # CMD ["yarn", "start"]
 # nodemon --exec babel-node index.js
 # CMD ["export","NODE_ENV=production","nodemon","-L" , "--exec" , "babel-node" , "./bin/www"]
-CMD ["yarn" , "run" , "nodemon_prod"]
+CMD ["yarn" , "run" , "nodemon-prod"]
