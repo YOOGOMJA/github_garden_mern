@@ -6,9 +6,9 @@ import mongoose from "mongoose";
 
 const db = mongoose.connection;
 
-import { Analytics, Crawler } from "../db/compute";
+import { Crawler } from "../db/compute";
 import * as LibChallenge from '../lib/challenge';
-import info from "../secure/info.json";
+
 
 const router = express.Router();
 

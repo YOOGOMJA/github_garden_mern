@@ -7,8 +7,9 @@ FROM mhart/alpine-node:9.7.1
 # nodemon 설치
 # RUN 명령어는 배열로도 사용할 수 있습니다.
 RUN yarn global add nodemon
-RUN yarn global add babel-node
+RUN yarn global add @babel/core
 RUN yarn global add @babel/node
+RUN yarn global add @babel/preset-env
 
 # ADD는 파일을 복사해줍니다.
 # 여기서 왼쪽은 호스트 파일의 경로, 오른쪽은 컨테이너의 파일 경로가 됩니다.
