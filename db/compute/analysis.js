@@ -620,14 +620,19 @@ const fetchSummary = () => {
             lastestChallengeFromNow += m_finish_dt.diff(m_now, "day") + 1;
         }
 
+        const repo_cnt = allRepos.length > 0 ? allRepos[0].cnt : 0;
+        const user_cnt = allUsers.length > 0 ? allUsers[0].cnt : 0;
+        const commit_cnt = allCommits.length > 0 ? allCommits[0].cnt : 0;
+
+
         resolve({
             code: 1,
             status: "SUCCESS",
             message: "조회에 성공했습니다",
             data: {
-                repo_cnt: allRepos[0].cnt,
-                user_cnt: allUsers[0].cnt,
-                commit_cnt: allCommits[0].cnt,
+                repo_cnt: repo_cnt,
+                user_cnt: user_cnt,
+                commit_cnt: commit_cnt,
                 challenge_duration: allChallengingDates,
                 current_challenge: {
                     left_days: lastestChallengeFromNow,

@@ -1,2 +1,4 @@
 /node_modules/
 /secure/
+
+/db/config.json

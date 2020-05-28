@@ -122,10 +122,21 @@ router.get("/attendances/", async (req, res, next) => {
                 $sort: { created_at: -1 },
             },
         ]);
-        const attendances = await Analytics.fetchAttendance(
-            latest_challenge[0].id
-        );
-        res.json(attendances);
+        if(latest_challenge.length > 0 ){
+            const attendances = await Analytics.fetchAttendance(
+                latest_challenge[0].id
+            );
+            res.json(attendances);
+        }
+        else{
+            res.json({
+                code : -1,
+                status : 'FAIL',
+                message : "등록된 도전 기간이 존재하지 않습니다",
+                data : []
+            })
+        }
+        
     } catch (e) {
         res.status(500).json(e);
     }
