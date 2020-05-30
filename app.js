@@ -69,4 +69,10 @@ app.use(function (err, req, res, next) {
 import * as Scheduler from './lib/scheduler';
 Scheduler.init();
 
+// 로그인 관련
+import passport from 'passport';
+import passportConfig from './db/passport';
+app.use(passport.initialize());
+passportConfig();
+
 module.exports = app;

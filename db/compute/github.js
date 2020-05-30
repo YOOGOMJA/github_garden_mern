@@ -12,7 +12,7 @@ import config from '../config.json';
 export const fetchEvents = (user_name, page = 1) =>{
     return new Promise((resolve, reject)=>{
         
-        const _APIClient = github.client(config.github_api_sha);
+        const _APIClient = github.client(config.github_api_token);
         _APIClient.get(
             `/users/${user_name}/events`,{ page : page}, 
             (err,status, body)=>{
@@ -33,7 +33,7 @@ export const fetchEvents = (user_name, page = 1) =>{
  */
 export const fetchRepos = (repo_name)=>{
     return new Promise((resolve, reject)=>{
-        const _APIClient = github.client(config.github_api_sha);
+        const _APIClient = github.client(config.github_api_token);
         _APIClient.get(
             `/repos/${repo_name}`,
             {},
@@ -56,7 +56,7 @@ export const fetchRepos = (repo_name)=>{
  */
 export const fetchRepoLang = (repo_name)=>{
     return new Promise((resolve, reject)=>{
-        const _APIClient = github.client(config.github_api_sha);
+        const _APIClient = github.client(config.github_api_token);
         _APIClient.get(
             `/repos/${repo_name}/languages`,{},
             (err, status , body)=>{
@@ -78,7 +78,7 @@ export const fetchRepoLang = (repo_name)=>{
  */
 export const fetchUser = (user_name)=>{
     return new Promise((resolve, reject)=>{
-        const _APIClient = github.client(config.github_api_sha);
+        const _APIClient = github.client(config.github_api_token);
         _APIClient.get(
             `/users/${user_name}`,{},
             (err, status , body)=>{

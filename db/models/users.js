@@ -16,6 +16,10 @@ const UserScheme = mongoose.Schema({
     bio: String,
     api_url: String,
     events_url: String,
+    auth : {
+        email : String,
+        password : String,
+    }
 });
 
 const User = mongoose.model("User" , UserScheme);
