@@ -2,7 +2,7 @@ import passportGithub from 'passport-github2';
 import config from '../../config.json';
 import { User } from '../../models';
 
-const host = process.env.NODE_ENV === "development" ? "localhost:4000" : "34.64.102.17"
+const host = process.env.NODE_ENV === "development" ? "localhost:4000" : "34.64.243.31/"
 
 export default new passportGithub.Strategy({
     clientID : config.github.client_id,
