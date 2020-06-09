@@ -31,3 +31,5 @@ const fn = {
 
 db.once("open" , fn.open);
 db.on("error" , fn.error);
+
+export default db;

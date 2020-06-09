@@ -456,40 +456,57 @@ const fetchAttendanceByDate = (challenge_id) => {
 };
 
 /**
- * @description 모든 저장소들의 언어 사용 분포를 가져옵니다
+ * @description 등록된 모든 저장소들의 언어 사용 분포를 가져옵니다
+ * @param {string} challenge_id 
+ * @param {string} login 
  * @returns {Promise} 결과를 담은 프로미스 객체를 반환합니다
- */
-const fetchLanguagePopulation = () => {
+*/
+const fetchLanguagePopulation = (options) => {
     const fetchPromise = new Promise(async (resolve, reject) => {
         try {
             let _additionalOptions = [];
-            const latestChallenge = await LibChallenge.latestChallenge();
-            if(latestChallenge){
-                // 진행중인 도전기간이 존재하는 경우 그 도전 기간안에 커밋이 발생한 저장소를 
-                // 대상으로 조회함
-                const allCommitsInCurrentChallenge = await Models.Commit.aggregate([
-                    { 
-                        $match : {
-                            commit_date : {
-                                $gte : latestChallenge.start_dt,
-                                $lte : latestChallenge.finish_dt,
-                            }
-                        }
-                    },
-                    {
-                        $group : {
-                            _id : '$repo'
-                        }
-                    }
-                ]);
-                let _ids = [];
-                allCommitsInCurrentChallenge.forEach(_id => _ids.push(_id._id));
-                _additionalOptions.push({
-                    $match : {
-                        '_id' : { $in : _ids }
-                    }
-                });
+            let _additionalMatchOption = {};
+            if(options !== undefined && options.login !== undefined){
+                const _user = await Models.User.findOne({ login: options.login });
+                if(!_user){ throw new Error("존재하지 않는 사용자입니다"); }
+                _additionalMatchOption = {
+                    ..._additionalMatchOption,
+                    committer : _user._id
+                };
             }
+            if(options !== undefined && options.challenge_id !== undefined){
+                const currentChallenge = await Models.Challenge.findOne({ id : options.challenge_id });
+                if(!currentChallenge){ throw new Error("존재하지 않는 프로젝트 입니다") }
+                // 대상으로 조회함
+                _additionalMatchOption = {
+                    ..._additionalMatchOption,
+                    commit_date : {
+                        $gte : currentChallenge.start_dt,
+                        $lte : currentChallenge.finish_dt,
+                    },
+                }
+            }
+
+            const allCommitsInCurrentChallenge = await Models.Commit.aggregate([
+                { 
+                    $match : {
+                        ..._additionalMatchOption,
+                    }
+                },
+                {
+                    $group : {
+                        _id : '$repo'
+                    }
+                }
+            ]);
+            let _ids = [];
+            allCommitsInCurrentChallenge.forEach(_id => _ids.push(_id._id));
+            _additionalOptions.push({
+                $match : {
+                    '_id' : { $in : _ids }
+                }
+            });
+        
             const allRepos = await Models.Repository.aggregate([
                 ..._additionalOptions,
                 {
@@ -536,7 +553,7 @@ const fetchLanguagePopulation = () => {
         }
     });
     return fetchPromise;
-};
+}
 
 /**
  * @description 요약해 보여줄 정보를 가져옵니다. 정보는 다음과 같습니다

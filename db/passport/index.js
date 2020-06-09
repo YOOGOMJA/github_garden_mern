@@ -1,8 +1,10 @@
-import passport from 'passport';
-import local from './strategies/local';
-import jwt from './strategies/jwt';
+import github from './strategies/github';
+import * as Models from '../models';
 
-export default ()=>{
-    passport.use(local);
-    passport.use(jwt);
+export default _passport=>{
+    _passport.use(github);
+    
+    _passport.serializeUser(Models.User.serializeUser());
+    _passport.deserializeUser(Models.User.deserializeUser());
+    return _passport;
 }

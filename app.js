@@ -4,15 +4,33 @@ var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 
-import usersRouter from "./routes/users";
-import analysisRouter from "./routes/analysis";
-import challengesRouter from "./routes/challenges";
-import reposRouter from "./routes/repos";
 
 // 로드하고 자동으로 실행됨
 import db from "./db/db";
 
 var app = express();
+
+// 로그인 관련
+import passport from "passport";
+import passportConfig from "./db/passport";
+import config from "./db/config.json";
+import session from "express-session";
+import mongoStore from "connect-mongo";
+
+// 세션을 mongodb에 저장
+const cookieStore = mongoStore(session);
+app.use(
+    session({ 
+        secret: config.secret, 
+        resave: true, 
+        saveUninitialized: false,
+        store : new cookieStore({ mongooseConnection: db })
+    })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
+passportConfig(passport);
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
@@ -29,11 +47,20 @@ app.use(express.static(path.resolve(__dirname, "./client")));
 
 import cors from "cors";
 
+import usersRouter from "./routes/users";
+import analysisRouter from "./routes/analysis";
+import challengesRouter from "./routes/challenges";
+import reposRouter from "./routes/repos";
+import authRouter from './routes/auth';
+import eventRouter from './routes/events';
+
 app.use(cors());
 app.use("/api/users", usersRouter);
 app.use("/api/analysis", analysisRouter);
 app.use("/api/challenges", challengesRouter);
 app.use("/api/repos", reposRouter);
+app.use("/api/events", eventRouter);
+app.use("/auth" , authRouter);
 
 // 추후 삭제해야
 const crawlingRouter = require("./routes/crawling").router;
@@ -66,13 +93,7 @@ app.use(function (err, req, res, next) {
 
 // 스케줄러 설정
 // const cron = require("node-cron");
-import * as Scheduler from './lib/scheduler';
+import * as Scheduler from "./lib/scheduler";
 Scheduler.init();
-
-// 로그인 관련
-import passport from 'passport';
-import passportConfig from './db/passport';
-app.use(passport.initialize());
-passportConfig();
 
 module.exports = app;

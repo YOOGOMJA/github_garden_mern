@@ -23,6 +23,11 @@ const ChallengeScheme = mongoose.Schema({
     created_at: Date,
     // 인증 여부
     is_featured : Boolean,
+    // 생성자
+    owner : {
+        type : mongoose.Schema.Types.ObjectId,
+        ref : "User",
+    }
 });
 
 const Challenge = mongoose.model("Challenge", ChallengeScheme);

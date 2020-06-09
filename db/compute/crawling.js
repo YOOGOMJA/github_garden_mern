@@ -102,6 +102,7 @@ const fetchUserEvents = (user_name) => {
             const user = await Models.User.findOne({ login: user_name });
             if (user) {
                 //  2. 해당 사용자의 이벤트를 1페이지부터 10페이지까지 불러옴 (최대치)
+                let eventsUpToDate = false;
                 for (let page = 1; page <= 10; page++) {
                     let _result = await GithubAPI.fetchEvents(user_name, page);
                     
@@ -139,10 +140,19 @@ const fetchUserEvents = (user_name) => {
 
                                 await _newEvent.save();
                             }
+                            else{
+                                // 이미 있는 이벤트가 등장한 경우 이 이후로 더 이상 추가하지 않음
+                                eventsUpToDate = true;
+                            }
                         }
                     }
                     // 2.2.데이터가 모자라는 경우 취소
                     if (_result.data.length < 10) {
+                        break;
+                    }
+                    // 2.3.이미 있는 데이터가 발견된 경우
+                    if (eventsUpToDate){
+                        console.log('already updated');
                         break;
                     }
                 }
@@ -177,7 +187,7 @@ const fetchUserEvents = (user_name) => {
 const fetchRepo = (repo_name) => {
     const fetchPromise = new Promise(async (resolve, reject) => {
         // 트랜잭션 시작
-        console.log('fetch 시작 : ' + repo_name);
+        // console.log('fetch 시작 : ' + repo_name);
         const session = await db.startSession();
         session.startTransaction();
         try {
@@ -589,7 +599,10 @@ export const one = (user_name) => {
                 code: -1,
                 status: "ERROR",
                 message: "갱신 중 오류가 발생했습니다",
-                error: e.message || e,
+                error: {
+                    message : e.error || e.message,
+                    object : e
+                },
             });
         }
     });

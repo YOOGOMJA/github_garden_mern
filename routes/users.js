@@ -7,8 +7,7 @@ import mongoose from "mongoose";
 const db = mongoose.connection;
 
 import { Crawler } from "../db/compute";
-import * as LibChallenge from '../lib/challenge';
-
+import * as LibChallenge from "../lib/challenge";
 
 const router = express.Router();
 
@@ -30,6 +29,65 @@ router.get("/", async (req, res, next) => {
     }
 });
 
+// 사용자 로그인 상태 조회
+router.get("/auth", async (req, res) => {
+    if (req.isAuthenticated()) {
+        // 1. 사용자 정보
+        // 2. 사용자의 참가 프로젝트 목록
+        // 3. 가장 최근 커밋 커밋
+        try {
+            const challenges = await Models.Challenge.find({
+                participants: req.user._id,
+            });
+            const latestCommits = await Models.Commit.aggregate([
+                {
+                    $match : {
+                        committer : req.user._id,
+                    }
+                },
+                {
+                    $sort: {
+                        commit_date: -1,
+                    },
+                },
+                {
+                    $limit: 1
+                }
+            ]);
+            res.json({
+                code: 1,
+                status: "SUCCESS",
+                message: "조회에 성공했습니다",
+                data: {
+                    is_authenticated: req.isAuthenticated(),
+                    user: req.user,
+                    challenges: challenges,
+                    latestCommits: latestCommits,
+                },
+            });
+        } catch (e) {
+            res.json({
+                code: -1,
+                status: "FAIL",
+                message: "오류가 발생했습니다",
+                error: {
+                    message: e.message,
+                    object: e,
+                },
+            });
+        }
+    } else {
+        res.json({
+            code: 0,
+            status: "FAIL",
+            message: "로그인 상태가 아님",
+            data: {
+                is_authenticated: req.is_authenticated,
+            },
+        });
+    }
+});
+
 // 사용자 검색
 router.get("/search", async (req, res, next) => {
     const user_name = req.query.user_name || "";
@@ -47,102 +105,33 @@ router.get("/search", async (req, res, next) => {
     });
 });
 
-router.get('/latest' ,async (req, res, next)=>{
-    try{
+router.get("/latest", async (req, res, next) => {
+    try {
         const latestChallenge = await LibChallenge.latestChallenge();
-        if(latestChallenge){
+        if (latestChallenge) {
             const users = await Models.User.find({
-                _id : {
-                    $in : latestChallenge.participants
-                }
+                _id: {
+                    $in: latestChallenge.participants,
+                },
             });
             res.json({
-                code : 1,
-                status : "SUCCESS",
-                message : '조회에 성공했습니다',
-                data : users
+                code: 1,
+                status: "SUCCESS",
+                message: "조회에 성공했습니다",
+                data: users,
             });
-        }
-        else{
+        } else {
             throw new Erorr("인증된 도전 기간이 존재하지 않습니다");
         }
-    }
-    catch(e){
-        res.json({
-            code : -1,
-            status : 'FAIL',
-            message : "통신 중 오류가 발생했습니다",
-            error : {
-                message : e.message,
-                body : e
-            }
-        });
-    }
-});
-
-// 사용자 추가
-// 사용자 추가 뒤 자동으로 최신 도전 기간에 등록 후 크롤링 수행
-router.post("/:user_name", async (req, res, next) => {
-    const current_user = await Models.User.findOne({
-        login: req.params.user_name,
-    });
-    if (!current_user) {
-        try {
-            const github_user = await GithubAPI.fetchUser(req.params.user_name);
-            const newUser = new Models.User({
-                id: github_user.data.id,
-                // 소문자로 변경하지 않음
-                login: github_user.data.login.toLowerCase(),
-                html_url: github_user.data.html_url,
-                avartar_url: github_user.data.avartar_url,
-                name: github_user.data.name,
-                blog: github_user.data.blog,
-                email: github_user.data.email,
-                bio: github_user.data.bio,
-                api_url: github_user.data.url,
-                events_url: github_user.data.events_url,
-            });
-            const userResult = await newUser.save();
-            const latestChallenge = await LibChallenge.latestChallenge();
-
-            // 최근 도전 기간이 있다면, 추가 함
-            if (latestChallenge) {
-                await Models.Challenge.updateOne(
-                    {
-                        id: latestChallenge.id,
-                    },
-                    {
-                        $push: { participants: newUser },
-                    }
-                );
-            }
-
-            const _crawling_result = await Crawler.one(req.params.user_name);
-
-            if (userResult) {
-                res.status(200).json({
-                    code: 1,
-                    status: "success",
-                    message: "추가되었습니다",
-                    data: {
-                        result: _crawling_result,
-                    },
-                });
-            }
-        } catch (e) {
-            console.log(e);
-            res.json({
-                code: -2,
-                status: "FAIL",
-                message: "오류가 발생했습니다",
-                error: e.error || e.message || e,
-            });
-        }
-    } else {
+    } catch (e) {
         res.json({
             code: -1,
             status: "FAIL",
-            message: "이미 존재하는 사용자 입니다",
+            message: "통신 중 오류가 발생했습니다",
+            error: {
+                message: e.message,
+                body: e,
+            },
         });
     }
 });
@@ -150,7 +139,7 @@ router.post("/:user_name", async (req, res, next) => {
 // 특정 사용자 조회
 router.get("/:user_name", async (req, res, next) => {
     const result = await Models.User.findOne({
-        login: req.params.user_name.toLowerCase(),
+        login: req.params.user_name,
     });
     if (result) {
         res.status(200).json({
@@ -236,10 +225,10 @@ router.delete("/:user_name", async (req, res, next) => {
                     events: rm_events,
                     challenges: rm_participant_challenges,
                     user: rm_user,
-                    repos : {
-                        updated : rm_repos_updated,
-                        removed : rm_repos_removed,
-                    }
+                    repos: {
+                        updated: rm_repos_updated,
+                        removed: rm_repos_removed,
+                    },
                 },
             });
         } else {
@@ -272,5 +261,39 @@ router.post("/:user_name/fetch", async (req, res, next) => {
         res.json(e);
     }
 });
+
+router.get("/:user_name/fetch" , async (req, res)=>{
+    try{
+        const _currentUser = await Models.User.findOne({
+            login: req.params.user_name
+        });
+        if(_currentUser){
+            const latestFetchLog = await Models.LogFetchGithubAPI.findOne()
+            .sort({ created_at : "desc" })
+            .limit(1)
+            .exec();
+            res.json({
+                code : 1,
+                status : "SUCCESS",
+                message : "성공했습니다",
+                data : latestFetchLog
+            })
+        }
+        else{
+            throw new Error("존재하지 않는 사용자 입니다");
+        }
+    }
+    catch(e){
+        res.json({
+            code : -1,
+            status : "FAIL",
+            message : "오류가 발생했습니다",
+            error : {
+                message : e.error ? ( e.error.message ? e.error.message : e.error ) : e.message,
+                object : e
+            }
+        })
+    }
+})
 
 export default router;
