@@ -9,7 +9,7 @@ const router = express.Router();
 router.get("/challenge/:challenge_id/request" , async(req, res)=>{
     try{
         if(!req.isAuthenticated()) { throw new Error("로그인이 필요합니다"); }
-        if(req.is_admin == false) { throw new Error("관리자 권한이 필요합니다"); }
+        if(!req.user.is_admin) { throw new Error("관리자 권한이 필요합니다"); }
 
         const current_challenge = await Models.Challenge.findOne({
             id : req.params.challenge_id
@@ -49,7 +49,7 @@ router.get("/challenge/:challenge_id/request" , async(req, res)=>{
 router.put("/challenge/:challenge_id/user/:login/request" , async(req, res)=>{
     try{
         if(!req.isAuthenticated()) { throw new Error("로그인이 필요합니다"); }
-        if(req.is_admin == false) { throw new Error("관리자 권한이 필요합니다"); }
+        if(!req.user.is_admin) { throw new Error("관리자 권한이 필요합니다"); }
         const current_challenge = await Models.Challenge.findOne({
             id : req.params.challenge_id
         });
@@ -96,7 +96,7 @@ router.put("/challenge/:challenge_id/user/:login/request" , async(req, res)=>{
 router.delete("/challenge/:challeneg_id/user/:login/request", async(req, res)=>{
     try{
         if(!req.isAuthenticated()) { throw new Error("로그인이 필요합니다"); }
-        if(req.is_admin == false) { throw new Error("관리자 권한이 필요합니다"); }
+        if(!req.user.is_admin) { throw new Error("관리자 권한이 필요합니다"); }
         const current_challenge = await Models.Challenge.findOne({
             id : req.params.challenge_id
         });
@@ -143,7 +143,7 @@ router.delete("/challenge/:challeneg_id/user/:login/request", async(req, res)=>{
 router.delete("/challenge/:challenge_id/user/:login" , async (req, res)=>{
     try{
         if(!req.isAuthenticated()) { throw new Error("로그인이 필요합니다"); }
-        if(req.is_admin == false) { throw new Error("관리자 권한이 필요합니다"); }
+        if(!req.user.is_admin) { throw new Error("관리자 권한이 필요합니다"); }
         const current_challenge = await Models.Challenge.findOne({
             id : req.params.challenge_id
         });
@@ -185,7 +185,7 @@ router.delete("/challenge/:challenge_id/user/:login" , async (req, res)=>{
 router.get("/users" , async(req, res)=>{
     try{
         if(!req.isAuthenticated()) { throw new Error("로그인이 필요합니다"); }
-        if(req.is_admin == false) { throw new Error("관리자 권한이 필요합니다"); }
+        if(!req.user.is_admin) { throw new Error("관리자 권한이 필요합니다"); }
         
         const result = await Models.User.find();
 
@@ -213,7 +213,7 @@ router.get("/users" , async(req, res)=>{
 router.post("/token" , async (req, res)=>{
     try{
         if(!req.isAuthenticated()) { throw new Error("로그인이 필요합니다"); }
-        if(req.is_admin == false) { throw new Error("관리자 권한이 필요합니다"); }
+        if(!req.user.is_admin) { throw new Error("관리자 권한이 필요합니다"); }
         const mExpired = moment().add(1, "hour");
         const generated_token = randomstring.generate();
         console.log(generated_token);
@@ -249,7 +249,7 @@ router.post("/token" , async (req, res)=>{
 router.get("/token" , async(req, res)=>{
     try{
         if(!req.isAuthenticated()) { throw new Error("로그인이 필요합니다"); }
-        if(!req.user.is_admin){ throw new Error("관리자 권한이 없습니다"); }
+        if(!req.user.is_admin) { throw new Error("관리자 권한이 필요합니다"); }
         
         const result = await Models.AuthToken.aggregate([
             {
@@ -355,7 +355,7 @@ router.delete("/user/:login" , async(req, res)=>{
     // 5. 도전 기간에서 참가자 삭제
     // 6. 사용자 삭제
     if(!req.isAuthenticated()) { throw new Error("로그인이 필요합니다"); }
-    if(req.is_admin == false) { throw new Error("관리자 권한이 필요합니다"); }
+    if(!req.user.is_admin) { throw new Error("관리자 권한이 필요합니다"); }
     // 다건 업데이트가 발생하므로 트랜잭션 사용
     const session = await db.startSession();
     session.startTransaction();
