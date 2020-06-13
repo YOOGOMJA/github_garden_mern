@@ -4,6 +4,8 @@ import { User } from './users';
 import { Commit } from './commits';
 import { Repository } from './repositories';
 import { LogFetchGithubAPI } from './logsFetchGithubAPI';
+import { JoinRequest } from './joinRequests';
+import {AuthToken} from './authTokens';
 
 export {
     Challenge,
@@ -11,5 +13,7 @@ export {
     User,
     Commit,
     Repository,
-    LogFetchGithubAPI
+    LogFetchGithubAPI,
+    JoinRequest,
+    AuthToken,
 };

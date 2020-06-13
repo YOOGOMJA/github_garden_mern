@@ -192,6 +192,29 @@ router.get("/summary", async (req, res, next) => {
     }
 });
 
+router.get("/summary/:challenge_id", async (req, res)=>{
+    try{
+        const result = await Analytics.fetchSummaryByProject(req.params.challenge_id);
+        res.json({
+            code : 1,
+            status : "SUCCESS",
+            message : "조회했습니다",
+            data : result
+        });
+    }
+    catch(e){
+        res.json({
+            code : -1,
+            status : "FAIL",
+            message : "조회 중 오류가 발생했습니다",
+            error : {
+                message : e.message | (e.error | e),
+                object : e
+            }
+        });
+    }
+});
+
 // 최신 도전 기간에서 모든 사용자들의 출석률
 // TODO : challenge_id를 기준으로 조회하는 항목 추가 되어야
 router.get("/attendances/", async (req, res, next) => {
@@ -351,6 +374,72 @@ router.get("/attendances/:challenge_id/date", async (req, res) => {
         });
     }
 });
+
+
+router.get("/attendances/:challenge_id/rank",async (req, res) => {
+    try {
+        const _challenge_id = req.params.challenge_id;
+        const currentChallenge = await Models.Challenge.findOne({
+            id: _challenge_id,
+        });
+        if (currentChallenge) {
+            const mStartDt = moment(currentChallenge.start_dt);
+            const mNow = moment();
+            const diffStrt = mStartDt.diff(mNow);
+            if (diffStrt > 0) { throw new Error("아직 시작하지 않은 일정입니다") }
+
+            const _allAttendances = await Analytics.fetchAttendance(
+                _challenge_id
+            );
+            let rank = 1;
+            let accumulate = 0;
+            let attCount = 0;
+            let participants = [];
+            for (let idx = 0; idx < _allAttendances.data.length; idx++) {
+                if(idx === 10) break;
+                const participant = _allAttendances.data[idx];
+                participants.push({
+                    info : participant.info,
+                    rank : rank,
+                    total : _allAttendances.data.length,
+                    attendances_count : participant.attendances_count
+                });
+
+                if (attCount != participant.attendances_count) {
+                    attCount = participant.attendances_count;
+                    rank += accumulate + 1;
+                    accumulate = 0;
+                } else {
+                    accumulate += 1;
+                }
+
+                
+            }
+            res.json({
+                code: 1,
+                status: "SUCCESS",
+                message: "조회에 성공했습니다",
+                data: participants,
+            });
+        } else {
+            throw new Error("존재하지 않는 유저 혹은 프로젝트입니다");
+        }
+    } catch (e) {
+        res.json({
+            code: -1,
+            status: "FAIL",
+            message:
+                e.message ||
+                e.error.message ||
+                "조회중 오류가 발생했습니다",
+            error: {
+                message: e.message,
+                object: e,
+            },
+        });
+    }
+});
+
 
 router.get("/attendances/:challenge_id/users/:user_id", async (req, res) => {
     const _challenge_id = req.params.challenge_id;
@@ -514,5 +603,6 @@ router.get(
         }
     }
 );
+
 
 export default router;

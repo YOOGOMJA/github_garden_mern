@@ -2,7 +2,8 @@ import express from "express";
 
 import * as Models from "../db/models";
 import * as GithubAPI from "../db/compute/github";
-import mongoose from "mongoose";
+import mongoose, { models, Model } from "mongoose";
+import moment from 'moment';
 
 const db = mongoose.connection;
 
@@ -14,7 +15,9 @@ const router = express.Router();
 // 사용자 모두 조회
 router.get("/", async (req, res, next) => {
     try {
-        const result = await Models.User.find();
+        const result = await Models.User.find({},{
+            access_token : 0
+        });
         res.status(200).json({
             status: "success",
             data: result,
@@ -24,7 +27,7 @@ router.get("/", async (req, res, next) => {
             code: -1,
             satus: "FAIL",
             message: "오류가 발생했습니다",
-            error: e,
+            error: e.message,
         });
     }
 });
@@ -96,6 +99,8 @@ router.get("/search", async (req, res, next) => {
             { login: { $regex: `${user_name}`, $options: "i" } },
             { name: { $regex: `${user_name}`, $options: "i" } },
         ],
+    },{
+        access_token : 0
     });
     res.json({
         code: 1,
@@ -113,6 +118,8 @@ router.get("/latest", async (req, res, next) => {
                 _id: {
                     $in: latestChallenge.participants,
                 },
+            },{
+                access_token : 0
             });
             res.json({
                 code: 1,
@@ -136,10 +143,65 @@ router.get("/latest", async (req, res, next) => {
     }
 });
 
+router.get("/challenges/:challenge_id" , async (req, res)=>{
+    try{
+        const currentChallenge = await Models.Challenge.findOne({
+            id : req.params.challenge_id
+        });
+        if(currentChallenge){
+            const participants = await Models.User.find({
+                _id : { $in: currentChallenge.participants }
+            },{
+                access_token : 0
+            });
+            let _data = [];
+            const mNow = moment();
+            const mStartToday = mNow.clone().hour(0).minute(0).second(0);
+            const mFinishToday = mNow.clone().hour(23).minute(59).second(59)
+            for(const participant of participants){
+                const commit_now = await Models.Commit.exists({
+                    commit_date : {
+                        $gte : mStartToday,
+                        $lte : mFinishToday
+                    },
+                    committer : participant._id
+                });
+                _data.push({
+                    user : participant,
+                    attended : commit_now
+                });
+            }
+
+            res.json({
+                code : 1,
+                status : "SUCCESS",
+                message : "조회에 성공했습니다",
+                data : _data
+            });
+        }
+        else{
+            throw new Error("존재하지 않는 도전 기간입니다");
+        }
+    }
+    catch(e){
+        res.json({
+            code : -1,
+            status : "FAIL",
+            message : "통신 중 오류가 발생했습니다",
+            error : {
+                message : e.message || ( e.error || e ),
+                object : e
+            }
+        });
+    }
+});
+
 // 특정 사용자 조회
 router.get("/:user_name", async (req, res, next) => {
     const result = await Models.User.findOne({
         login: req.params.user_name,
+    },{
+        access_token : 0
     });
     if (result) {
         res.status(200).json({
@@ -159,96 +221,149 @@ router.get("/:user_name", async (req, res, next) => {
     }
 });
 
-// 특정 사용자를 삭제
-// TODO : 사용자 삭제시 저장소 삭제되지 않도록 처리
-router.delete("/:user_name", async (req, res, next) => {
-    // 1. 존재하는 사용자인지 확인
-    // 2. 관련 커밋 삭제
-    // 3. 관련 저장소 삭제 혹은 contributor 제외 처리
-    // 4. 관련 이벤트 삭제
-    // 5. 도전 기간에서 참가자 삭제
-    // 6. 사용자 삭제
-
-    // 다건 업데이트가 발생하므로 트랜잭션 사용
-    const session = await db.startSession();
-    session.startTransaction();
-    try {
-        // STEP 1
-        const current_user = await Models.User.findOne({
-            login: req.params.user_name,
+// 특정 도전에 추가
+router.post("/challenge/:challenge_id/request", async(req, res)=>{
+    try{
+        if(!req.isAuthenticated()){throw new Error("로그인이 필요합니다");}
+        
+        const current_challenge = await Models.Challenge.findOne({
+            id : req.params.challenge_id
         });
-        if (current_user) {
-            // STEP 2
-            const rm_commits = await Models.Commit.deleteMany({
-                committer: current_user._id,
-            });
-            // STEP 3
-            const rm_repos = await Models.Repository.find({
-                contributor: current_user._id,
-            });
-            let rm_repos_removed = [];
-            let rm_repos_updated = [];
-            for (let repo of rm_repos) {
-                if (repo.contributor.length <= 1) {
-                    let removed = await repo.remove();
-                    rm_repos_removed.push(removed);
-                } else {
-                    let updated = await Models.Repository.updateOne(
-                        { _id: repo._id },
-                        {
-                            $pull: { contributor: current_user._id },
-                        }
-                    );
-                    rm_repos_updated.push(updated);
-                }
+
+        if(!current_challenge){ throw new Error("존재하지않는 도전 기간입니다"); }
+
+        const prevRequestExists = await Models.JoinRequest.exists({
+            user : req.user._id,
+            is_expired : false,
+            challenge : current_challenge._id
+        });
+
+        if(prevRequestExists){ throw new Error("이미 요청했습니다"); }
+
+        const newRequest = new Models.JoinRequest({
+            user : req.user._id,
+            challenge : current_challenge._id,
+            updated_by : req.user._id,
+            created_at : new Date()
+        });
+        const result = await newRequest.save();
+
+        res.json({
+            code : 1,
+            status : "SUCCESS",
+            message : "요청되었습니다",
+            data : result
+        });
+    }
+    catch(e){
+        res.json({
+            code : -1,
+            status : "FAIL",
+            message : "통신 중 오류가 발생했습니다",
+            error : {
+                message : e.message || ( e.error || e ),
+                object : e
             }
-            // STEP 4
-            const rm_events = await Models.Event.deleteMany({
-                actor: current_user._id,
+        });
+    }
+});
+
+// 특정 도전 요청 여부 확인
+router.get("/challenge/:challenge_id/request" , async(req, res)=>{
+    try{
+        if(req.isAuthenticated()){
+            if(!req.isAuthenticated()){throw new Error("로그인이 필요합니다");}
+        
+            const current_challenge = await Models.Challenge.findOne({
+                id : req.params.challenge_id
             });
-            // STEP 5
-            const rm_participant_challenges = await Models.Challenge.updateMany(
-                {
-                    participants: current_user._id,
-                },
-                { $pull: { participants: current_user._id } }
-            );
-            const rm_user = await current_user.remove();
-            await session.commitTransaction();
+
+            if(!current_challenge){ throw new Error("존재하지않는 도전 기간입니다"); }
+
+            const prevRequest = await Models.JoinRequest.findOne({
+                user : req.user._id,
+                is_expired : false,
+                challenge : current_challenge._id
+            });
 
             res.json({
-                code: 1,
-                status: "SUCCESS",
-                message: "사용자가 정상적으로 삭제되었습니다",
-                data: {
-                    commits: rm_commits,
-                    events: rm_events,
-                    challenges: rm_participant_challenges,
-                    user: rm_user,
-                    repos: {
-                        updated: rm_repos_updated,
-                        removed: rm_repos_removed,
-                    },
-                },
-            });
-        } else {
-            res.json({
-                code: -2,
-                status: "FAIL",
-                message: "존재하지 않는 사용자입니다",
+                code : 1,
+                status : "SUCCESS",
+                message : "조회했습니다",
+                data : prevRequest
             });
         }
-    } catch (e) {
-        await session.abortTransaction();
-        console.log(e);
+        else{
+            throw new Error("로그인이 필요합니다");
+        }
+    }
+    catch(e){
         res.json({
-            code: -1,
-            status: "FAIL",
-            message: "통신 중 오류가 발생헀습니다.",
-            error: e.message,
+            code : -1,
+            status : "FAIL",
+            message : "통신 중 오류가 발생했습니다",
+            error : {
+                message : e.message || ( e.error || e ),
+                object : e
+            }
         });
-    } finally {
-        session.endSession();
+    }
+});
+
+// 특정 도전 요청 여부 삭제
+// 삭제 처리는 expired로 
+router.delete("/challenge/:challenge_id/request", async(req,res)=>{
+    try{
+        if(req.isAuthenticated()){
+            if(!req.isAuthenticated()){throw new Error("로그인이 필요합니다");}
+        
+            const current_challenge = await Models.Challenge.findOne({
+                id : req.params.challenge_id
+            });
+
+            if(!current_challenge){ throw new Error("존재하지않는 도전 기간입니다"); }
+
+            const prevRequest = await Models.JoinRequest.findOne({
+                user : req.user._id,
+                is_expired : false,
+                challenge : current_challenge._id
+            });
+
+            if(!prevRequest){ throw new Error("요청이 존재하지 않습니다"); }
+
+            const result = await Models.updateOne(
+            {
+                user : req.user._id,
+                is_expired : false,
+                challenge : current_challenge._id
+            } , 
+            {
+                is_expired : true,
+                updated_at : new Date(),
+                updated_by : req.user._id
+            });
+
+            res.json({
+                code : 1,
+                status : "SUCCESS",
+                message : "수정했습니다",
+                data : result
+            });
+        }
+        else{
+            throw new Error("로그인이 필요합니다");
+        }
+    }   
+    catch(e){
+        res.json({
+            code : -1,
+            status : "FAIL",
+            message : "통신 중 오류가 발생했습니다",
+            error : {
+                message : e.message || ( e.error || e ),
+                object : e
+            }
+        });
     }
 });
 
@@ -294,6 +409,8 @@ router.get("/:user_name/fetch" , async (req, res)=>{
             }
         })
     }
-})
+});
+
+
 
 export default router;

@@ -11,6 +11,8 @@ router.get("/users/:user_name", async (req, res, next) => {
         const _currentPage = req.query.page ? Number(req.query.page) : 1;
         const current_user = await Models.User.findOne({
             login: req.params.user_name,
+        },{
+            access_token : 0
         });
         if (current_user) {
             await Models.Repository.find({

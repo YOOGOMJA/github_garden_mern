@@ -37,6 +37,40 @@ router.get("/", async (req, res, next) => {
     }
 });
 
+// 종료되지 않은 도전 기간을 조회
+router.get("/active" , async(req, res)=>{
+    try{
+        const mNow = moment();
+        const activeChallenges = await Models.Challenge.find({
+            finish_dt : {
+                $gte : mNow.toDate()
+            }
+        })
+        .sort({
+            start_dt : "ASC",
+            title : "ASC"
+        });
+
+        res.json({
+            code : 1,
+            status : "SUCCESS",
+            message : "조회했습니다",
+            data : activeChallenges
+        })
+    }
+    catch(e){
+        res.json({
+            code : -1,
+            status : "FAIL",
+            message : "조회 중 오류가 발생했습니다",
+            error : {
+                message : e.message,
+                object : e
+            }
+        })
+    }
+})
+
 // 최신 도전 기간을 조회
 router.get("/latest", async (req, res, next) => {
     try {

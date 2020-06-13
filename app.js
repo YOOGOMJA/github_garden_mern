@@ -53,6 +53,7 @@ import challengesRouter from "./routes/challenges";
 import reposRouter from "./routes/repos";
 import authRouter from './routes/auth';
 import eventRouter from './routes/events';
+import adminRouter from './routes/admin';
 
 app.use(cors());
 app.use("/api/users", usersRouter);
@@ -60,6 +61,7 @@ app.use("/api/analysis", analysisRouter);
 app.use("/api/challenges", challengesRouter);
 app.use("/api/repos", reposRouter);
 app.use("/api/events", eventRouter);
+app.use("/api/admin", adminRouter);
 app.use("/auth" , authRouter);
 
 // 추후 삭제해야

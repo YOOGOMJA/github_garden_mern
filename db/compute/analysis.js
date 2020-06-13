@@ -207,6 +207,11 @@ const fetchAttendance = (challenge_id) => {
                                 from: "users",
                                 localField: "committer",
                                 foreignField: "_id",
+                                pipeline : [
+                                    {
+                                        $project : { access_token : 0 }
+                                    }
+                                ],
                                 as: "lookup_committer",
                             },
                         },
@@ -349,7 +354,7 @@ const fetchAttendanceByDate = (challenge_id) => {
                             cnt: { $sum: 1 },
                         },
                     },
-                    { $project: { _id: 0 } },
+                    { $project: { _id: 0, access_token : 0 } },
                 ]);
                 const allParticipantsCnt =
                     allParticipants.length > 0 ? allParticipants[0].cnt : 0;
@@ -664,6 +669,92 @@ const fetchSummary = () => {
     return fetchPromise;
 };
 
+const fetchSummaryByProject = (challenge_id)=>{
+    return new Promise(async (resolve, reject)=>{
+        try{
+            const currentChallenge = await Models.Challenge.findOne({
+                id : challenge_id
+            });
+
+            if(!currentChallenge){ throw new Error("존재하지 않는 도전기간입니다"); }
+            
+            // 0. 프로젝트에 등록된 시작시간, 종료시간 가져옴 
+            const mStartDt = moment(currentChallenge.start_dt).hour(0).minute(0).second(0);
+            const mFinishDt = moment(currentChallenge.finish_dt).hour(23).minute(59).second(59);
+
+            // 1. 등록된 저장소 수 
+            // 1.1. 기간 내 등록된 커밋들을 기준으로 연관된 저장소 갯수를 카운트
+            const groupedCommitsByRepo = await Models.Commit.aggregate([
+                {
+                    $match : {
+                        commit_date : {
+                            $gte : mStartDt.toDate(),
+                            $lte : mFinishDt.toDate(),
+                        }
+                    }
+                },
+                {
+                    $group: {
+                        _id: "$repo",
+                        commit_cnt: { $sum: 1 },
+                    },
+                },
+            ]);
+
+            // 2. 등록된 사용자 수 
+            // 2.1. 기간 내 등록된 커밋들을 기준으로 연관된 사용자 수를 카운트
+            const groupedCommitsByUser = await Models.Commit.aggregate([
+                {
+                    $match : {
+                        commit_date : {
+                            $gte : mStartDt.toDate(),
+                            $lte : mFinishDt.toDate(),
+                        }
+                    }
+                },
+                {
+                    $group: {
+                        _id: "$committer",
+                        commit_cnt: { $sum: 1 },
+                    },
+                },
+            ]);
+
+            // 3. 등록된 커밋 수
+            // 3.1. 등록된 도전 일자 기준으로 카운트
+            const commitsInCurrentChallenge = await Models.Commit.aggregate([
+                {
+                    $match : {
+                        commit_date : {
+                            $gte : mStartDt.toDate(),
+                            $lte : mFinishDt.toDate(),
+                        }
+                    }
+                },
+            ]);
+
+            // 4. 현재 프로젝트의 남은 일 수 
+            let remainDays = mFinishDt.diff(moment(), 'day');
+
+            let daysFromStart = moment().diff(mStartDt, 'day');
+
+            resolve({
+                repo_cnt : groupedCommitsByRepo.length,
+                user_cnt : groupedCommitsByUser.length,
+                commit_cnt : commitsInCurrentChallenge.length,
+                days_from_now_to_finish : remainDays,
+                days_from_start_to_now : daysFromStart,
+            });
+        }
+        catch(e){
+            reject({
+                message : e.message | (e.error | e),
+                object : e
+            });
+        }
+    });
+}
+
 /**
  * @deprecated fetchRepoWithCommits로 대체됨
  * @description 인증된 저장소의 정보를 가져옵니다
@@ -835,4 +926,5 @@ export {
     fetchFeaturedRepository,
     fetchSummary,
     fetchRepoWithCommits,
+    fetchSummaryByProject,
 };
