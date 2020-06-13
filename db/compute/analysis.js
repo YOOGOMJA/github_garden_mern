@@ -207,11 +207,11 @@ const fetchAttendance = (challenge_id) => {
                                 from: "users",
                                 localField: "committer",
                                 foreignField: "_id",
-                                pipeline : [
-                                    {
-                                        $project : { "committer.access_token" : 0 }
-                                    }
-                                ],
+                                // pipeline : [
+                                //     {
+                                //         $project : { "committer.access_token" : 0 }
+                                //     }
+                                // ],
                                 as: "lookup_committer",
                             },
                         },
