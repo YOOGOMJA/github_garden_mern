@@ -209,7 +209,7 @@ const fetchAttendance = (challenge_id) => {
                                 foreignField: "_id",
                                 pipeline : [
                                     {
-                                        $project : { access_token : 0 }
+                                        $project : { "committer.access_token" : 0 }
                                     }
                                 ],
                                 as: "lookup_committer",
