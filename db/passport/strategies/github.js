@@ -15,7 +15,17 @@ export default new passportGithub.Strategy({
             const user = await User.findOne({
                 id : profile.id
             });
-            if(user){  console.log('this user already signed up'); return cb(null, user);  }
+            if(user){ 
+                await User.updateOne({
+                    id : profile.id,
+                },
+                {
+                    ...profile._json,
+                    access_token : accessToken,
+                    refresh_token : refreshToken,
+                });
+                console.log("updated");
+                return cb(null, user);  }
             else{
                 const newUser = new User({
                     ...profile._json,
