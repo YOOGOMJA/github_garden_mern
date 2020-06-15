@@ -279,6 +279,9 @@ router.get("/challenges/:challenge_id/hottest", async (req, res) => {
                             $gte: currentChallenge.start_dt,
                             $lte: currentChallenge.finish_dt,
                         },
+                        committer : {
+                            $in : currentChallenge.participants
+                        }
                     },
                 },
                 {
