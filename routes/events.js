@@ -27,7 +27,7 @@ router.get("/", async (req, res, next)=>{
             const _paginatedEvents = await Models.Event
                                     .find()
                                     .limit(ITEMS_PER_PAGE)
-                                    .skip(ITEMS_PER_PAGE * _currentPage)
+                                    .skip(ITEMS_PER_PAGE * (_currentPage - 1))
                                     .sort({
                                         created_at: 'desc'
                                     })

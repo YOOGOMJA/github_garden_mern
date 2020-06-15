@@ -76,6 +76,12 @@ app.use("/api", api_404_router);
 app.get("*", function (request, response) {
     response.sendFile(path.resolve(__dirname, "./client", "index.html"));
 });
+// import { createProxyMiddleware } from 'http-proxy-middleware';
+// app.get("*", createProxyMiddleware({
+//     target : "http://localhost:3000",
+//     changeOrigin:true,
+//     ws : true,
+// }));
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

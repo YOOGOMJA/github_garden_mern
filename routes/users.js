@@ -222,7 +222,7 @@ router.get("/:user_name", async (req, res, next) => {
 });
 
 // 특정 도전에 추가
-router.post("/challenge/:challenge_id/request", async(req, res)=>{
+router.post("/challenges/:challenge_id/request", async(req, res)=>{
     try{
         if(!req.isAuthenticated()){throw new Error("로그인이 필요합니다");}
         
@@ -269,7 +269,7 @@ router.post("/challenge/:challenge_id/request", async(req, res)=>{
 });
 
 // 특정 도전 요청 여부 확인
-router.get("/challenge/:challenge_id/request" , async(req, res)=>{
+router.get("/challenges/:challenge_id/request" , async(req, res)=>{
     try{
         if(req.isAuthenticated()){
             if(!req.isAuthenticated()){throw new Error("로그인이 필요합니다");}
