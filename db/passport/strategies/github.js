@@ -2,15 +2,12 @@ import passportGithub from 'passport-github2';
 import config from '../../config.json';
 import { User } from '../../models';
 
-const host = process.env.NODE_ENV === "development" ? "localhost:4000" : "34.64.243.31"
-
 export default new passportGithub.Strategy({
-    clientID : config.github.client_id,
-    clientSecret : config.github.client_secret,
-    callbackURL : `http://${ host }/auth/callback`
+    clientID : config.github.oauth.client_id,
+    clientSecret : config.github.oauth.client_secret,
+    callbackURL : `${ config.host.server[process.env.NODE_ENV] }/auth/callback`
 },
     async function( accessToken, refreshToken, profile, cb ){
-        console.log('strategy function called');
         try{    
             const user = await User.findOne({
                 id : profile.id
@@ -24,7 +21,6 @@ export default new passportGithub.Strategy({
                     access_token : accessToken,
                     refresh_token : refreshToken,
                 });
-                console.log("updated");
                 return cb(null, user);  }
             else{
                 const newUser = new User({
@@ -33,7 +29,6 @@ export default new passportGithub.Strategy({
                     refresh_token : refreshToken,
                 });
                 await newUser.save();
-                console.log('create new user');
                 return cb(null, newUser);
             }
         }

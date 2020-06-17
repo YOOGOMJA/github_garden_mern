@@ -4,7 +4,6 @@ var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 
-
 // 로드하고 자동으로 실행됨
 import db from "./db/db";
 
@@ -42,8 +41,6 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
-// 리액트 파일을 static 경로로 추가
-app.use(express.static(path.resolve(__dirname, "./client")));
 
 import cors from "cors";
 
@@ -73,15 +70,13 @@ import api_404_router from "./routes/api.404";
 app.use("/api", api_404_router);
 
 // 이제 모든 주소는 리액트로 보냄
-app.get("*", function (request, response) {
-    response.sendFile(path.resolve(__dirname, "./client", "index.html"));
-});
-// import { createProxyMiddleware } from 'http-proxy-middleware';
-// app.get("*", createProxyMiddleware({
-//     target : "http://localhost:3000",
-//     changeOrigin:true,
-//     ws : true,
-// }));
+import { getClient } from './lib/clientConnector';
+app.get("*", getClient((env)=>{
+    if(env === "production"){
+        // 리액트 파일을 static 경로로 추가
+        app.use(express.static(path.resolve(__dirname, "./client")));
+    }
+}));
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

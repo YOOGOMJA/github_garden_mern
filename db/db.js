@@ -3,9 +3,7 @@ import config from './config.json';
 import * as Models from './models';
 import moment from 'moment';
 
-const host = config.host[process.env.NODE_ENV];
-
-mongoose.connect(host , {
+mongoose.connect(config.host.db[process.env.NODE_ENV] , {
     useNewUrlParser: true,
     useFindAndModify: false,
     useUnifiedTopology: true,
@@ -30,12 +28,12 @@ const fn = {
         }
 
         const firstTokenExists = await Models.AuthToken.exists({
-            value : config.secret
+            value : config.initial_auth_token
         });
         if(!firstTokenExists){
             const mNow = moment();
             const newToken = new Models.AuthToken({
-                value : config.secret,
+                value : config.initial_auth_token,
                 expired_at : mNow.clone().add(1, "y").toDate(),
             });
             await newToken.save();   

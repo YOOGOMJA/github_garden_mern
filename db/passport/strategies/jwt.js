@@ -9,7 +9,7 @@ import * as Models from "../../models";
 export default new JWTStrategy(
     {
         jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken(),
-        secretOrKey: config.jwt_token,
+        secretOrKey: config.secret,
     },
     async function (jwtPayload, done) {
         try {
