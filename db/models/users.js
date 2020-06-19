@@ -25,7 +25,7 @@ const UserScheme = mongoose.Schema({
     },
 });
 
-UserScheme.plugin(passportLocalMongoose, { usernameField: 'email' });
+UserScheme.plugin(passportLocalMongoose, { usernameField: 'login' });
 
 const User = mongoose.model("User" , UserScheme);
 

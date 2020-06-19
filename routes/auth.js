@@ -4,7 +4,7 @@ import * as Models from '../db/models';
 const router = express.Router();
 
 router.get("/" , passport.authenticate("github" , {
-    scope : [ "user:email" ]
+    scope : [ "user:login" ]
 }));
 
 router.get("/callback" , passport.authenticate("github", {
