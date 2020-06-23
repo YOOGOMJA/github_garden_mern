@@ -77,7 +77,7 @@ const clientPath = getClient((env)=>{
         app.use(express.static(path.resolve(__dirname, "client")));
     }
 });
-console.log(clientPath);
+console.log(clientPath.toString());
 app.use("*", clientPath);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
