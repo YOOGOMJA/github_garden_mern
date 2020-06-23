@@ -61,10 +61,6 @@ app.use("/api/events", eventRouter);
 app.use("/api/admin", adminRouter);
 app.use("/auth" , authRouter);
 
-// 추후 삭제해야
-const crawlingRouter = require("./routes/crawling").router;
-app.use("/api/crawl", crawlingRouter);
-
 import api_404_router from "./routes/api.404";
 // api 경로에서 생기는항목들은 404 처리
 app.use("/api", api_404_router);
@@ -74,7 +70,7 @@ import { getClient } from './lib/clientConnector';
 app.get("*", getClient((env)=>{
     if(env === "production"){
         // 리액트 파일을 static 경로로 추가
-        app.use(express.static(path.resolve(__dirname, "./client")));
+        app.use(express.static(path.resolve(__dirname, "client")));
     }
 }));
 
