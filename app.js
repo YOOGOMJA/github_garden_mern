@@ -67,17 +67,17 @@ app.use("/api", api_404_router);
 
 // 이제 모든 주소는 리액트로 보냄
 import { getClient } from './lib/clientConnector';
-app.use(express.static(path.resolve(__dirname, "client")));
-app.get("*", (req, res)=>{  
-    res.sendFile(path.resolve(__dirname, "client", "index.html"));
-})
-// app.get("*", getClient((env)=>{
-//     if(env === "production"){
-//         // 리액트 파일을 static 경로로 추가
-//         app.use(express.static(path.resolve(__dirname, "client")));
-//     }
-// }));
-
+// app.use(express.static(path.resolve(__dirname, "client")));
+// app.get("*", (req, res)=>{  
+//     res.sendFile(path.resolve(__dirname, "client", "index.html"));
+// })
+const clientPath = getClient((env)=>{
+    if(env === "production"){
+        // 리액트 파일을 static 경로로 추가
+        app.use(express.static(path.resolve(__dirname, "client")));
+    }
+});
+app.use("*", clientPath);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
     next(createError(404));
