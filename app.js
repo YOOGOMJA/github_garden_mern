@@ -71,7 +71,7 @@ import { getClient } from './lib/clientConnector';
 // app.get("*", (req, res)=>{  
 //     res.sendFile(path.resolve(__dirname, "client", "index.html"));
 // })
-const clientPath = getClient((env)=>{
+const clientPath = getClient(__dirname, (env)=>{
     if(env === "production"){
         // 리액트 파일을 static 경로로 추가
         app.use(express.static(path.resolve(__dirname, "client")));
