@@ -1,7 +1,7 @@
 import * as Models from "../models";
 import moment from "moment";
 import * as LibAttendance from "../../lib/attendance";
-import * as LibChallenge from '../../lib/challenge';
+import * as LibChallenge from "../../lib/challenge";
 
 import mongoose from "mongoose";
 const db = mongoose.connection;
@@ -321,7 +321,7 @@ const fetchAttendance = (challenge_id) => {
                 code: 0,
                 status: "FAIL",
                 message: "통신 중 오류가 발생했습니다",
-                error : e.message || e,
+                error: e.message || e,
             });
         }
     });
@@ -354,7 +354,7 @@ const fetchAttendanceByDate = (challenge_id) => {
                             cnt: { $sum: 1 },
                         },
                     },
-                    { $project: { _id: 0, access_token : 0 } },
+                    { $project: { _id: 0, access_token: 0 } },
                 ]);
                 const allParticipantsCnt =
                     allParticipants.length > 0 ? allParticipants[0].cnt : 0;
@@ -426,7 +426,9 @@ const fetchAttendanceByDate = (challenge_id) => {
                         let current_date = filtered.find(
                             (elem) => elem.date === _commit._id.date
                         );
-                        current_date.cnt += 1;
+                        if (current_date) {
+                            current_date.cnt += 1;
+                        }
                     }
                 });
 
@@ -462,56 +464,64 @@ const fetchAttendanceByDate = (challenge_id) => {
 
 /**
  * @description 등록된 모든 저장소들의 언어 사용 분포를 가져옵니다
- * @param {string} challenge_id 
- * @param {string} login 
+ * @param {string} challenge_id
+ * @param {string} login
  * @returns {Promise} 결과를 담은 프로미스 객체를 반환합니다
-*/
+ */
 const fetchLanguagePopulation = (options) => {
     const fetchPromise = new Promise(async (resolve, reject) => {
         try {
             let _additionalOptions = [];
             let _additionalMatchOption = {};
-            if(options !== undefined && options.login !== undefined){
-                const _user = await Models.User.findOne({ login: options.login });
-                if(!_user){ throw new Error("존재하지 않는 사용자입니다"); }
+            if (options !== undefined && options.login !== undefined) {
+                const _user = await Models.User.findOne({
+                    login: options.login,
+                });
+                if (!_user) {
+                    throw new Error("존재하지 않는 사용자입니다");
+                }
                 _additionalMatchOption = {
                     ..._additionalMatchOption,
-                    committer : _user._id
+                    committer: _user._id,
                 };
             }
-            if(options !== undefined && options.challenge_id !== undefined){
-                const currentChallenge = await Models.Challenge.findOne({ id : options.challenge_id });
-                if(!currentChallenge){ throw new Error("존재하지 않는 프로젝트 입니다") }
+            if (options !== undefined && options.challenge_id !== undefined) {
+                const currentChallenge = await Models.Challenge.findOne({
+                    id: options.challenge_id,
+                });
+                if (!currentChallenge) {
+                    throw new Error("존재하지 않는 프로젝트 입니다");
+                }
                 // 대상으로 조회함
                 _additionalMatchOption = {
                     ..._additionalMatchOption,
-                    commit_date : {
-                        $gte : currentChallenge.start_dt,
-                        $lte : currentChallenge.finish_dt,
+                    commit_date: {
+                        $gte: currentChallenge.start_dt,
+                        $lte: currentChallenge.finish_dt,
                     },
-                }
+                };
             }
 
             const allCommitsInCurrentChallenge = await Models.Commit.aggregate([
-                { 
-                    $match : {
+                {
+                    $match: {
                         ..._additionalMatchOption,
-                    }
+                    },
                 },
                 {
-                    $group : {
-                        _id : '$repo'
-                    }
-                }
+                    $group: {
+                        _id: "$repo",
+                    },
+                },
             ]);
             let _ids = [];
-            allCommitsInCurrentChallenge.forEach(_id => _ids.push(_id._id));
+            allCommitsInCurrentChallenge.forEach((_id) => _ids.push(_id._id));
             _additionalOptions.push({
-                $match : {
-                    '_id' : { $in : _ids }
-                }
+                $match: {
+                    _id: { $in: _ids },
+                },
             });
-        
+
             const allRepos = await Models.Repository.aggregate([
                 ..._additionalOptions,
                 {
@@ -558,7 +568,7 @@ const fetchLanguagePopulation = (options) => {
         }
     });
     return fetchPromise;
-}
+};
 
 /**
  * @description 요약해 보여줄 정보를 가져옵니다. 정보는 다음과 같습니다
@@ -603,9 +613,9 @@ const fetchSummary = () => {
         // 프로젝트 진행 기간
         const allChallenges = await Models.Challenge.find(
             {
-                finish_dt : {
-                    $lte : new Date(),
-                }
+                finish_dt: {
+                    $lte: new Date(),
+                },
             },
             {
                 _id: true,
@@ -615,7 +625,7 @@ const fetchSummary = () => {
         );
 
         const latestChallenge = await Models.Challenge.aggregate([
-            { $match:{ is_featured : true } },
+            { $match: { is_featured: true } },
             {
                 $sort: { created_at: -1 },
             },
@@ -646,7 +656,6 @@ const fetchSummary = () => {
         const user_cnt = allUsers.length > 0 ? allUsers[0].cnt : 0;
         const commit_cnt = allCommits.length > 0 ? allCommits[0].cnt : 0;
 
-
         resolve({
             code: 1,
             status: "SUCCESS",
@@ -669,29 +678,37 @@ const fetchSummary = () => {
     return fetchPromise;
 };
 
-const fetchSummaryByProject = (challenge_id)=>{
-    return new Promise(async (resolve, reject)=>{
-        try{
+const fetchSummaryByProject = (challenge_id) => {
+    return new Promise(async (resolve, reject) => {
+        try {
             const currentChallenge = await Models.Challenge.findOne({
-                id : challenge_id
+                id: challenge_id,
             });
 
-            if(!currentChallenge){ throw new Error("존재하지 않는 도전기간입니다"); }
-            
-            // 0. 프로젝트에 등록된 시작시간, 종료시간 가져옴 
-            const mStartDt = moment(currentChallenge.start_dt).hour(0).minute(0).second(0);
-            const mFinishDt = moment(currentChallenge.finish_dt).hour(23).minute(59).second(59);
+            if (!currentChallenge) {
+                throw new Error("존재하지 않는 도전기간입니다");
+            }
 
-            // 1. 등록된 저장소 수 
+            // 0. 프로젝트에 등록된 시작시간, 종료시간 가져옴
+            const mStartDt = moment(currentChallenge.start_dt)
+                .hour(0)
+                .minute(0)
+                .second(0);
+            const mFinishDt = moment(currentChallenge.finish_dt)
+                .hour(23)
+                .minute(59)
+                .second(59);
+
+            // 1. 등록된 저장소 수
             // 1.1. 기간 내 등록된 커밋들을 기준으로 연관된 저장소 갯수를 카운트
             const groupedCommitsByRepo = await Models.Commit.aggregate([
                 {
-                    $match : {
-                        commit_date : {
-                            $gte : mStartDt.toDate(),
-                            $lte : mFinishDt.toDate(),
-                        }
-                    }
+                    $match: {
+                        commit_date: {
+                            $gte: mStartDt.toDate(),
+                            $lte: mFinishDt.toDate(),
+                        },
+                    },
                 },
                 {
                     $group: {
@@ -701,16 +718,16 @@ const fetchSummaryByProject = (challenge_id)=>{
                 },
             ]);
 
-            // 2. 등록된 사용자 수 
+            // 2. 등록된 사용자 수
             // 2.1. 기간 내 등록된 커밋들을 기준으로 연관된 사용자 수를 카운트
             const groupedCommitsByUser = await Models.Commit.aggregate([
                 {
-                    $match : {
-                        commit_date : {
-                            $gte : mStartDt.toDate(),
-                            $lte : mFinishDt.toDate(),
-                        }
-                    }
+                    $match: {
+                        commit_date: {
+                            $gte: mStartDt.toDate(),
+                            $lte: mFinishDt.toDate(),
+                        },
+                    },
                 },
                 {
                     $group: {
@@ -724,36 +741,35 @@ const fetchSummaryByProject = (challenge_id)=>{
             // 3.1. 등록된 도전 일자 기준으로 카운트
             const commitsInCurrentChallenge = await Models.Commit.aggregate([
                 {
-                    $match : {
-                        commit_date : {
-                            $gte : mStartDt.toDate(),
-                            $lte : mFinishDt.toDate(),
-                        }
-                    }
+                    $match: {
+                        commit_date: {
+                            $gte: mStartDt.toDate(),
+                            $lte: mFinishDt.toDate(),
+                        },
+                    },
                 },
             ]);
 
-            // 4. 현재 프로젝트의 남은 일 수 
-            let remainDays = mFinishDt.diff(moment(), 'day');
+            // 4. 현재 프로젝트의 남은 일 수
+            let remainDays = mFinishDt.diff(moment(), "day");
 
-            let daysFromStart = moment().diff(mStartDt, 'day');
+            let daysFromStart = moment().diff(mStartDt, "day");
 
             resolve({
-                repo_cnt : groupedCommitsByRepo.length,
-                user_cnt : groupedCommitsByUser.length,
-                commit_cnt : commitsInCurrentChallenge.length,
-                days_from_now_to_finish : remainDays,
-                days_from_start_to_now : daysFromStart,
+                repo_cnt: groupedCommitsByRepo.length,
+                user_cnt: groupedCommitsByUser.length,
+                commit_cnt: commitsInCurrentChallenge.length,
+                days_from_now_to_finish: remainDays,
+                days_from_start_to_now: daysFromStart,
             });
-        }
-        catch(e){
+        } catch (e) {
             reject({
-                message : e.message | (e.error | e),
-                object : e
+                message: e.message | (e.error | e),
+                object: e,
             });
         }
     });
-}
+};
 
 /**
  * @deprecated fetchRepoWithCommits로 대체됨
