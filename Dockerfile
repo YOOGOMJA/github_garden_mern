@@ -2,7 +2,7 @@
 
 # alpine 버전은 node.js 공식 이미지보다 몇 배나 가볍습니다.
 # 6xx mb vs 13x mb
-FROM mhart/alpine-node:12
+FROM mhart/alpine-node:latest
 
 # nodemon 설치
 # RUN 명령어는 배열로도 사용할 수 있습니다.
