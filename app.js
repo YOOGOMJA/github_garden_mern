@@ -92,7 +92,12 @@ app.use(function (err, req, res, next) {
 
 // 스케줄러 설정
 // const cron = require("node-cron");
-import * as Scheduler from "./lib/scheduler";
-Scheduler.init();
+// import * as Scheduler from "./lib/scheduler";
+// Scheduler.init();
+
+import discordChatbot from './lib/discord';
+import * as Scheduler from './lib/scheduler';
+
+Scheduler.init(discordChatbot);
 
 module.exports = app;
