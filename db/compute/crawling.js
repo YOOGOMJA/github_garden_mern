@@ -25,7 +25,7 @@ const fetchRepoLanguages = (repo_name) => {
             if (current_repo) {
                 const _result = await GithubAPI.fetchRepoLang(repo_name);
                 const languages = [];
-                Object.keys(_result.data).forEach((lang) => {
+              Object.keys(_result.data).forEach((lang) => {
                     languages.push({
                         name: lang,
                         rate: _result.data[lang],
