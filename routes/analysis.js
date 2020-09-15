@@ -407,7 +407,7 @@ router.get("/attendances/:challenge_id/rank", async (req, res) => {
 
                 if (attCount != participant.attendances_count) {
                     attCount = participant.attendances_count;
-                    rank += accumulate + 1;
+                    rank += accumulate;
                     accumulate = 0;
                 } else {
                     accumulate += 1;
