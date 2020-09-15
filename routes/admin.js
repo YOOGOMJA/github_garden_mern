@@ -569,16 +569,4 @@ router.delete("/user/:login", async (req, res) => {
     }
 });
 
-router.get("/commits/fix", async (req, res) => {
-    const allCommits = await Models.Commit.find();
-    allCommits.forEach(async (commit) => {
-        commit.commit_date_string = moment(commit.commit_date).format(
-            "YYYY-MM-DD"
-        );
-        await commit.save();
-    });
-
-    res.json("finished");
-});
-
 export default router;
