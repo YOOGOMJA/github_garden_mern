@@ -31,7 +31,7 @@ router.get("/languages", async (req, res, next) => {
     }
 });
 
-router.get("/languages/users/:user_id" , async(req,res)=>{
+router.get("/languages/users/:user_id", async (req, res) => {
     try {
         const currentUserExists = await Models.User.exists({
             login: req.params.user_id,
@@ -75,34 +75,37 @@ router.get("/languages/challenges/:challenge_id", async (req, res) => {
     }
 });
 
-router.get("/languages/challenges/:challenge_id/users/:user_id", async (req, res) => {
-    try {
-        const currentChallengeExists = await Models.Challenge.exists({
-            id: req.params.challenge_id,
-        });
-        const currentUserExists = await Models.User.exists({
-            login: req.params.user_id,
-        });
-        if (!currentChallengeExists) {
-            throw new Error("존재하지 않는 프로젝트 입니다");
+router.get(
+    "/languages/challenges/:challenge_id/users/:user_id",
+    async (req, res) => {
+        try {
+            const currentChallengeExists = await Models.Challenge.exists({
+                id: req.params.challenge_id,
+            });
+            const currentUserExists = await Models.User.exists({
+                login: req.params.user_id,
+            });
+            if (!currentChallengeExists) {
+                throw new Error("존재하지 않는 프로젝트 입니다");
+            }
+            if (!currentUserExists) {
+                throw new Error("존재하지 않는 유저 입니다");
+            }
+            const result = await Analytics.fetchLanguagePopulation({
+                challenge_id: req.params.challenge_id,
+                login: req.params.user_id,
+            });
+            res.json(result);
+        } catch (e) {
+            res.json({
+                code: -1,
+                status: "FAIL",
+                message: "통신 중 오류가 발생했습니다",
+                error: { object: e, message: e.message },
+            });
         }
-        if (!currentUserExists) {
-            throw new Error("존재하지 않는 유저 입니다");
-        }
-        const result = await Analytics.fetchLanguagePopulation({
-            challenge_id: req.params.challenge_id,
-            login: req.params.user_id,
-        });
-        res.json(result);
-    } catch (e) {
-        res.json({
-            code: -1,
-            status: "FAIL",
-            message: "통신 중 오류가 발생했습니다",
-            error: { object: e, message: e.message },
-        });
     }
-});
+);
 
 // 가장 붐비는 저장소
 router.get("/repo/popular", async (req, res, next) => {
@@ -192,25 +195,26 @@ router.get("/summary", async (req, res, next) => {
     }
 });
 
-router.get("/summary/:challenge_id", async (req, res)=>{
-    try{
-        const result = await Analytics.fetchSummaryByProject(req.params.challenge_id);
+router.get("/summary/:challenge_id", async (req, res) => {
+    try {
+        const result = await Analytics.fetchSummaryByProject(
+            req.params.challenge_id
+        );
         res.json({
-            code : 1,
-            status : "SUCCESS",
-            message : "조회했습니다",
-            data : result
+            code: 1,
+            status: "SUCCESS",
+            message: "조회했습니다",
+            data: result,
         });
-    }
-    catch(e){
+    } catch (e) {
         res.json({
-            code : -1,
-            status : "FAIL",
-            message : "조회 중 오류가 발생했습니다",
-            error : {
-                message : e.message | (e.error | e),
-                object : e
-            }
+            code: -1,
+            status: "FAIL",
+            message: "조회 중 오류가 발생했습니다",
+            error: {
+                message: e.message | (e.error | e),
+                object: e,
+            },
         });
     }
 });
@@ -375,8 +379,7 @@ router.get("/attendances/:challenge_id/date", async (req, res) => {
     }
 });
 
-
-router.get("/attendances/:challenge_id/rank",async (req, res) => {
+router.get("/attendances/:challenge_id/rank", async (req, res) => {
     try {
         const _challenge_id = req.params.challenge_id;
         const currentChallenge = await Models.Challenge.findOne({
@@ -386,7 +389,9 @@ router.get("/attendances/:challenge_id/rank",async (req, res) => {
             const mStartDt = moment(currentChallenge.start_dt);
             const mNow = moment();
             const diffStrt = mStartDt.diff(mNow);
-            if (diffStrt > 0) { throw new Error("아직 시작하지 않은 일정입니다") }
+            if (diffStrt > 0) {
+                throw new Error("아직 시작하지 않은 일정입니다");
+            }
 
             const _allAttendances = await Analytics.fetchAttendance(
                 _challenge_id
@@ -396,13 +401,14 @@ router.get("/attendances/:challenge_id/rank",async (req, res) => {
             let attCount = 0;
             let participants = [];
             for (let idx = 0; idx < _allAttendances.data.length; idx++) {
-                if(idx === 10) break;
+                if (idx === 10) break;
                 const participant = _allAttendances.data[idx];
+                if (idx === 0) attCount = participant.attendances_count;
                 participants.push({
-                    info : participant.info,
-                    rank : rank,
-                    total : _allAttendances.data.length,
-                    attendances_count : participant.attendances_count
+                    info: participant.info,
+                    rank: rank,
+                    total: _allAttendances.data.length,
+                    attendances_count: participant.attendances_count,
                 });
 
                 if (attCount != participant.attendances_count) {
@@ -412,8 +418,6 @@ router.get("/attendances/:challenge_id/rank",async (req, res) => {
                 } else {
                     accumulate += 1;
                 }
-
-                
             }
             res.json({
                 code: 1,
@@ -429,9 +433,7 @@ router.get("/attendances/:challenge_id/rank",async (req, res) => {
             code: -1,
             status: "FAIL",
             message:
-                e.message ||
-                e.error.message ||
-                "조회중 오류가 발생했습니다",
+                e.message || e.error.message || "조회중 오류가 발생했습니다",
             error: {
                 message: e.message,
                 object: e,
@@ -439,7 +441,6 @@ router.get("/attendances/:challenge_id/rank",async (req, res) => {
         });
     }
 });
-
 
 router.get("/attendances/:challenge_id/users/:user_id", async (req, res) => {
     const _challenge_id = req.params.challenge_id;
@@ -468,7 +469,9 @@ router.get("/attendances/:challenge_id/users/:user_id", async (req, res) => {
     }
 });
 
-router.get("/attendances/:challenge_id/users/:user_id/rank",async (req, res) => {
+router.get(
+    "/attendances/:challenge_id/users/:user_id/rank",
+    async (req, res) => {
         try {
             const _challenge_id = req.params.challenge_id;
             const _user_id = req.params.user_id;
@@ -483,7 +486,9 @@ router.get("/attendances/:challenge_id/users/:user_id/rank",async (req, res) => 
                 const mFinishDt = moment(currentChallenge.finish_dt);
                 const mNow = moment();
                 const diffStrt = mStartDt.diff(mNow);
-                if (diffStrt > 0) { throw new Error("아직 시작하지 않은 일정입니다") }
+                if (diffStrt > 0) {
+                    throw new Error("아직 시작하지 않은 일정입니다");
+                }
 
                 const _allAttendances = await Analytics.fetchAttendance(
                     _challenge_id
@@ -531,7 +536,8 @@ router.get("/attendances/:challenge_id/users/:user_id/rank",async (req, res) => 
                 },
             });
         }
-});
+    }
+);
 
 router.get(
     "/attendances/:challenge_id/users/:user_id/today",
@@ -603,6 +609,5 @@ router.get(
         }
     }
 );
-
 
 export default router;
