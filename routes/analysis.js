@@ -404,12 +404,6 @@ router.get("/attendances/:challenge_id/rank", async (req, res) => {
                 if (idx === 10) break;
                 const participant = _allAttendances.data[idx];
                 if (idx === 0) attCount = participant.attendances_count;
-                participants.push({
-                    info: participant.info,
-                    rank: rank,
-                    total: _allAttendances.data.length,
-                    attendances_count: participant.attendances_count,
-                });
 
                 if (attCount != participant.attendances_count) {
                     attCount = participant.attendances_count;
@@ -418,6 +412,13 @@ router.get("/attendances/:challenge_id/rank", async (req, res) => {
                 } else {
                     accumulate += 1;
                 }
+
+                participants.push({
+                    info: participant.info,
+                    rank: rank,
+                    total: _allAttendances.data.length,
+                    attendances_count: participant.attendances_count,
+                });
             }
             res.json({
                 code: 1,
