@@ -503,21 +503,13 @@ router.get(
                         break;
                     }
                     if (idx === 0) attCount = participant.attendances_count;
-
                     if (attCount != participant.attendances_count) {
                         attCount = participant.attendances_count;
-                        rank += accumulate;
+                        rank += accumulate + 1;
                         accumulate = 0;
                     } else {
                         accumulate += 1;
                     }
-
-                    participants.push({
-                        info: participant.info,
-                        rank: rank,
-                        total: _allAttendances.data.length,
-                        attendances_count: participant.attendances_count,
-                    });
                 }
                 res.json({
                     code: 1,
