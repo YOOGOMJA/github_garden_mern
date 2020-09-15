@@ -499,7 +499,6 @@ router.get(
                 let attCount = 0;
                 for (let idx = 0; idx < _allAttendances.data.length; idx++) {
                     const participant = _allAttendances.data[idx];
-                    consolelog(attCount, participant.attendance.s_count);
                     if (participant.info.login === _user_id) {
                         break;
                     }

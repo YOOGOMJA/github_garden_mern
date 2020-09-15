@@ -223,7 +223,7 @@ const fetchAttendance = (challenge_id) => {
                             $group: {
                                 _id: {
                                     committer: "$lookup_committer",
-                                    date: "$commit_date_string",
+                                    date: "$commit_date",
                                 },
                                 count: {
                                     $sum: 1,
@@ -273,7 +273,7 @@ const fetchAttendance = (challenge_id) => {
                             current_idx = filtered.length - 1;
                         }
                         filtered[current_idx]["attendances"][
-                            _commit._id.date
+                            moment(_commit._id.date).format("YYYY-MM-DD")
                         ] += _commit.count;
                         filtered[current_idx].attendances_count += 1;
                     });
