@@ -500,15 +500,15 @@ router.get(
                 for (let idx = 0; idx < _allAttendances.data.length; idx++) {
                     const participant = _allAttendances.data[idx];
                     if (idx === 0) attCount = participant.attendances_count;
-                    if (participant.info.login === _user_id) {
-                        break;
-                    }
                     if (attCount != participant.attendances_count) {
                         attCount = participant.attendances_count;
                         rank += accumulate + 1;
                         accumulate = 0;
                     } else {
                         accumulate += 1;
+                    }
+                    if (participant.info.login === _user_id) {
+                        break;
                     }
                 }
                 res.json({
