@@ -499,10 +499,10 @@ router.get(
                 let attCount = 0;
                 for (let idx = 0; idx < _allAttendances.data.length; idx++) {
                     const participant = _allAttendances.data[idx];
+                    if (idx === 0) attCount = participant.attendances_count;
                     if (participant.info.login === _user_id) {
                         break;
                     }
-                    if (idx === 0) attCount = participant.attendances_count;
                     if (attCount != participant.attendances_count) {
                         attCount = participant.attendances_count;
                         rank += accumulate + 1;
