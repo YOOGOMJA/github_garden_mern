@@ -502,7 +502,6 @@ router.get(
                     if (participant.info.login === _user_id) {
                         break;
                     }
-                    const participant = _allAttendances.data[idx];
                     if (idx === 0) attCount = participant.attendances_count;
 
                     if (attCount != participant.attendances_count) {
