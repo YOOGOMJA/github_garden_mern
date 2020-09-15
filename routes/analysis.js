@@ -502,7 +502,7 @@ router.get(
                     if (idx === 0) attCount = participant.attendances_count;
                     if (attCount != participant.attendances_count) {
                         attCount = participant.attendances_count;
-                        rank += accumulate + 1;
+                        rank += accumulate;
                         accumulate = 0;
                     } else {
                         accumulate += 1;
