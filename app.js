@@ -19,11 +19,11 @@ import mongoStore from "connect-mongo";
 // 세션을 mongodb에 저장
 const cookieStore = mongoStore(session);
 app.use(
-    session({ 
-        secret: config.secret, 
-        resave: true, 
+    session({
+        secret: config.secret,
+        resave: true,
         saveUninitialized: false,
-        store : new cookieStore({ mongooseConnection: db })
+        store: new cookieStore({ mongooseConnection: db }),
     })
 );
 
@@ -41,16 +41,15 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
-
 import cors from "cors";
 
 import usersRouter from "./routes/users";
 import analysisRouter from "./routes/analysis";
 import challengesRouter from "./routes/challenges";
 import reposRouter from "./routes/repos";
-import authRouter from './routes/auth';
-import eventRouter from './routes/events';
-import adminRouter from './routes/admin';
+import authRouter from "./routes/auth";
+import eventRouter from "./routes/events";
+import adminRouter from "./routes/admin";
 
 app.use(cors());
 app.use("/api/users", usersRouter);
@@ -59,20 +58,23 @@ app.use("/api/challenges", challengesRouter);
 app.use("/api/repos", reposRouter);
 app.use("/api/events", eventRouter);
 app.use("/api/admin", adminRouter);
-app.use("/auth" , authRouter);
+app.use("/auth", authRouter);
 
 import api_404_router from "./routes/api.404";
 // api 경로에서 생기는항목들은 404 처리
 app.use("/api", api_404_router);
 
 // 이제 모든 주소는 리액트로 보냄
-import { getClient } from './lib/clientConnector';
-app.use("*", getClient(__dirname, (env)=>{
-    if(env === "production"){
-        // 리액트 파일을 static 경로로 추가
-        app.use(express.static(path.resolve(__dirname, "client")));
-    }
-}));
+import { getClient } from "./lib/clientConnector";
+app.use(
+    "*",
+    getClient(__dirname, (env) => {
+        if (env === "production") {
+            // 리액트 파일을 static 경로로 추가
+            app.use(express.static(path.resolve(__dirname, "client")));
+        }
+    })
+);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -95,8 +97,8 @@ app.use(function (err, req, res, next) {
 // import * as Scheduler from "./lib/scheduler";
 // Scheduler.init();
 
-import discordChatbot from './lib/discord';
-import * as Scheduler from './lib/scheduler';
+import discordChatbot from "./lib/discord";
+import * as Scheduler from "./lib/scheduler";
 
 Scheduler.init(discordChatbot);
 
