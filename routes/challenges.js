@@ -1,6 +1,7 @@
 import express from "express";
 import * as Models from "../db/models";
-import moment from "moment";
+import moment from "moment-timezone";
+moment.tz.setDefault("Asia/Seoul");
 import * as _lib_challenge from "../lib/challenge";
 const router = express.Router();
 
@@ -38,45 +39,43 @@ router.get("/", async (req, res, next) => {
 });
 
 // 종료되지 않은 도전 기간을 조회
-router.get("/active" , async(req, res)=>{
-    try{
+router.get("/active", async (req, res) => {
+    try {
         const mNow = moment();
         const activeChallenges = await Models.Challenge.find({
-            finish_dt : {
-                $gte : mNow.toDate()
-            }
-        })
-        .sort({
-            start_dt : "ASC",
-            title : "ASC"
+            finish_dt: {
+                $gte: mNow.toDate(),
+            },
+        }).sort({
+            start_dt: "ASC",
+            title: "ASC",
         });
 
         res.json({
-            code : 1,
-            status : "SUCCESS",
-            message : "조회했습니다",
-            data : activeChallenges
-        })
-    }
-    catch(e){
+            code: 1,
+            status: "SUCCESS",
+            message: "조회했습니다",
+            data: activeChallenges,
+        });
+    } catch (e) {
         res.json({
-            code : -1,
-            status : "FAIL",
-            message : "조회 중 오류가 발생했습니다",
-            error : {
-                message : e.message,
-                object : e
-            }
-        })
+            code: -1,
+            status: "FAIL",
+            message: "조회 중 오류가 발생했습니다",
+            error: {
+                message: e.message,
+                object: e,
+            },
+        });
     }
-})
+});
 
 // 최신 도전 기간을 조회
 router.get("/latest", async (req, res, next) => {
     try {
         const latestChallenge = await Models.Challenge.aggregate([
-            { 
-                $match : { is_featured : true }
+            {
+                $match: { is_featured: true },
             },
             {
                 $sort: { created_at: -1 },
@@ -113,7 +112,7 @@ router.post("/", async (req, res, next) => {
         const new_challenge = new Models.Challenge({
             id: "challenge_" + new Date().getTime(),
             created_at: new Date(),
-            is_featured : false,
+            is_featured: false,
         });
 
         valid.validated.map((item) => {
@@ -146,31 +145,34 @@ router.post("/", async (req, res, next) => {
     }
 });
 
-router.put("/:challenge_id/featured" , async (req, res, next)=>{
+router.put("/:challenge_id/featured", async (req, res, next) => {
     try {
         const current_challenge = await Models.Challenge.findOne({
             id: req.params.challenge_id,
         });
         if (current_challenge) {
-            if(Object.keys(req.body).indexOf('is_featured') >= 0){
-                if(req.body.is_featured){
-                    // 인증 처리 하는 경우 
-                    const _ChallengeFeaturedAlready = await Models.Challenge.findOne({
-                        is_featured : true
-                    });
-                    if(_ChallengeFeaturedAlready){
+            if (Object.keys(req.body).indexOf("is_featured") >= 0) {
+                if (req.body.is_featured) {
+                    // 인증 처리 하는 경우
+                    const _ChallengeFeaturedAlready = await Models.Challenge.findOne(
+                        {
+                            is_featured: true,
+                        }
+                    );
+                    if (_ChallengeFeaturedAlready) {
                         throw new Error("이미 인증된 도전 기간이 있습니다");
                     }
                 }
                 current_challenge.is_featured = req.body.is_featured;
                 await current_challenge.save();
                 res.json({
-                    code : 1,
-                    status : 'SUCCESS',
-                    message : '수정 되었습니다',
+                    code: 1,
+                    status: "SUCCESS",
+                    message: "수정 되었습니다",
                 });
-            }   
-            else{ throw new Error("인증 여부가 주어지지 않았습니다");  }
+            } else {
+                throw new Error("인증 여부가 주어지지 않았습니다");
+            }
         } else {
             throw new Error("존재하지 않는 도전 기간입니다");
         }
@@ -277,12 +279,12 @@ router.get("/users/:user_name", async (req, res, next) => {
                     },
                 },
                 {
-                    $sort : {
-                        is_featured : -1,
-                        start_dt : -1,
-                        finish_dt: -1
-                    }
-                }
+                    $sort: {
+                        is_featured: -1,
+                        start_dt: -1,
+                        finish_dt: -1,
+                    },
+                },
             ]);
             res.json({
                 code: 1,
@@ -307,19 +309,22 @@ router.get("/users/:user_name", async (req, res, next) => {
     }
 });
 
-router.delete("/:challenge_id/users/:user_name", async (req, res, next)=>{
+router.delete("/:challenge_id/users/:user_name", async (req, res, next) => {
     try {
         const current_user = await Models.User.findOne({
             login: req.params.user_name,
         });
         if (current_user) {
-            const result = await Models.Challenge.updateOne({
-                id : req.params.challenge_id,
-            },{
-                $pull:{
-                    participants: current_user._id
+            const result = await Models.Challenge.updateOne(
+                {
+                    id: req.params.challenge_id,
+                },
+                {
+                    $pull: {
+                        participants: current_user._id,
+                    },
                 }
-            });
+            );
             res.json({
                 code: 1,
                 status: "SUCCESS",
