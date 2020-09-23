@@ -6,7 +6,7 @@ import * as GithubAPI from "./github";
 import mongoose, { modelNames } from "mongoose";
 const db = mongoose.connection;
 
-import * as _Logger from '../../lib/logger/';
+import * as _Logger from "../../lib/logger/";
 
 // github API를 사용해야하는 기능들은 여기에 모두 모아둡니다
 
@@ -25,7 +25,7 @@ const fetchRepoLanguages = (repo_name) => {
             if (current_repo) {
                 const _result = await GithubAPI.fetchRepoLang(repo_name);
                 const languages = [];
-              Object.keys(_result.data).forEach((lang) => {
+                Object.keys(_result.data).forEach((lang) => {
                     languages.push({
                         name: lang,
                         rate: _result.data[lang],
@@ -50,7 +50,7 @@ const fetchRepoLanguages = (repo_name) => {
                 code: -1,
                 status: "FAIL",
                 message: "불러오는 중 보류가 발생했습니다",
-                error : e.error || e.message || e
+                error: e.error || e.message || e,
             });
         }
     });
@@ -105,7 +105,7 @@ const fetchUserEvents = (user_name) => {
                 let eventsUpToDate = false;
                 for (let page = 1; page <= 10; page++) {
                     let _result = await GithubAPI.fetchEvents(user_name, page);
-                    
+
                     for (let event of _result.data) {
                         // 2. 해당 회차의 이벤트를 불러옴
                         // 2.1. pushEvent인 경우에만 진행
@@ -139,8 +139,7 @@ const fetchUserEvents = (user_name) => {
                                 });
 
                                 await _newEvent.save();
-                            }
-                            else{
+                            } else {
                                 // 이미 있는 이벤트가 등장한 경우 이 이후로 더 이상 추가하지 않음
                                 eventsUpToDate = true;
                             }
@@ -151,8 +150,8 @@ const fetchUserEvents = (user_name) => {
                         break;
                     }
                     // 2.3.이미 있는 데이터가 발견된 경우
-                    if (eventsUpToDate){
-                        console.log('already updated');
+                    if (eventsUpToDate) {
+                        console.log("already updated");
                         break;
                     }
                 }
@@ -197,7 +196,7 @@ const fetchRepo = (repo_name) => {
             });
 
             if (repo) {
-                try{
+                try {
                     let fetched_repo = await GithubAPI.fetchRepos(repo_name);
                     repo.description = fetched_repo.data.description;
                     repo.created_at = fetched_repo.data.created_at;
@@ -214,15 +213,15 @@ const fetchRepo = (repo_name) => {
                         message: `저장소 [${repo.name}]의 갱신이 완료되었습니다`,
                         data: repo,
                     });
-                }
-                catch(e){
-                    if(e.error.statusCode === 404){
+                } catch (e) {
+                    if (e.error.statusCode === 404) {
                         await repo.remove();
-                        console.log('존재하지 않는 repo : ' + repo_name + " 삭제");
+                        console.log(
+                            "존재하지 않는 repo : " + repo_name + " 삭제"
+                        );
                     }
                     throw new Error(e.error.message);
                 }
-                
             } else {
                 throw new Error("저장소가 존재하지 않습니다");
             }
@@ -259,19 +258,17 @@ const fetchUserReposAllInfo = (user_name) => {
                 });
                 let _results = [];
                 for (let repo of repos) {
-                    try{
+                    try {
                         const _repo_result = await fetchRepo(repo.name);
                         const _lan_result = await fetchRepoLanguages(repo.name);
                         _results.push({
                             repo: _repo_result,
                             lan: _lan_result,
                         });
-                    }
-                    catch(e){
-                        if(e.error === 'Not Found'){
+                    } catch (e) {
+                        if (e.error === "Not Found") {
                             continue;
-                        }
-                        else{
+                        } else {
                             throw e.error;
                         }
                     }
@@ -354,21 +351,21 @@ const computeUserEvents = (user_name) => {
             });
             if (_currentUser) {
                 // 2.0. 이전 조회 기록이 있는지 확인 (추가됨)
-                // 이전 조회 기록이 있을 경우 그 이후부터 갱신함 
+                // 이전 조회 기록이 있을 경우 그 이후부터 갱신함
                 let _additional_options = [];
                 const _fetchLog = await Models.LogFetchGithubAPI.aggregate([
-                    { $match : { 'user' : _currentUser } },
-                    { $sort : { 'created_at' : -1 } },
-                    { $limit : 1 },
+                    { $match: { user: _currentUser } },
+                    { $sort: { created_at: -1 } },
+                    { $limit: 1 },
                 ]);
-                if(_fetchLog.length === 1){
+                if (_fetchLog.length === 1) {
                     const last_fetch_date = moment(_fetchLog[0].created_at);
                     _additional_options.push({
-                        $match : {
-                            created_at : {
-                                $gte : last_fetch_date.toDate()
-                            }
-                        }
+                        $match: {
+                            created_at: {
+                                $gte: last_fetch_date.toDate(),
+                            },
+                        },
                     });
                 }
 
@@ -377,6 +374,11 @@ const computeUserEvents = (user_name) => {
                     {
                         $match: {
                             actor: _currentUser._id,
+                        },
+                    },
+                    {
+                        $sort: {
+                            created_at: 1,
                         },
                     },
                     ..._additional_options,
@@ -560,19 +562,21 @@ export const one = (user_name) => {
     return new Promise(async (resolve, reject) => {
         try {
             const _user = await Models.User.findOne({ login: user_name });
-            if(_user){
+            if (_user) {
                 const _logs = await Models.LogFetchGithubAPI.aggregate([
-                    { $match : { user : _user } },
-                    { $sort : { created_at : -1 } },
-                    { $limit : 1 }
+                    { $match: { user: _user } },
+                    { $sort: { created_at: -1 } },
+                    { $limit: 1 },
                 ]);
-                if(_logs.length === 1){
+                if (_logs.length === 1) {
                     // 로그가 존재
                     const mNow = moment();
                     const mLastFetchedDt = moment(_logs[0].created_at);
-                    if(mNow.diff(mLastFetchedDt, 'minutes') <= 60){
-                        // 1시간 안에 다시 조회하는 경우 
-                        throw new Error("마지막 갱신 후 최소 한 시간이 지난 후 다시 갱신할 수 있습니다");
+                    if (mNow.diff(mLastFetchedDt, "minutes") <= 60) {
+                        // 1시간 안에 다시 조회하는 경우
+                        throw new Error(
+                            "마지막 갱신 후 최소 한 시간이 지난 후 다시 갱신할 수 있습니다"
+                        );
                     }
                 }
             }
@@ -600,8 +604,8 @@ export const one = (user_name) => {
                 status: "ERROR",
                 message: "갱신 중 오류가 발생했습니다",
                 error: {
-                    message : e.error || e.message,
-                    object : e
+                    message: e.error || e.message,
+                    object: e,
                 },
             });
         }
@@ -616,17 +620,19 @@ export const all = () => {
     return new Promise(async (resolve, reject) => {
         try {
             const _logs = await Models.LogFetchGithubAPI.aggregate([
-                { $match : { user : 'ALL' } },
-                { $sort : { created_at : -1 } },
-                { $limit : 1 },
+                { $match: { user: "ALL" } },
+                { $sort: { created_at: -1 } },
+                { $limit: 1 },
             ]);
 
-            if(_logs.length === 1){
+            if (_logs.length === 1) {
                 const mNow = moment();
                 const mLastFetchedDt = moment(_logs[0].created_at);
-                if(mNow.diff(mLastFetchedDt, 'minutes') <= 90){
-                    // 1시간 안에 다시 조회하는 경우 
-                    throw new Error("마지막 갱신 후 최소 세 시간이 지난 후 다시 갱신할 수 있습니다");
+                if (mNow.diff(mLastFetchedDt, "minutes") <= 90) {
+                    // 1시간 안에 다시 조회하는 경우
+                    throw new Error(
+                        "마지막 갱신 후 최소 세 시간이 지난 후 다시 갱신할 수 있습니다"
+                    );
                 }
             }
             // 1. 깃허브 API로부터 이벤트를 불러옴

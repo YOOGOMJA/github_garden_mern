@@ -4,6 +4,9 @@ import * as Models from "../db/models";
 import moment from "moment-timezone";
 import randomstring from "randomstring";
 
+import { Analytics, Crawler } from "../db/compute";
+import { user } from "octonode";
+
 moment.tz.setDefault("Asia/Seoul");
 
 const router = express.Router();
@@ -568,5 +571,82 @@ router.delete("/user/:login", async (req, res) => {
         session.endSession();
     }
 });
+
+// router.get("/statistical", async (req, res) => {
+//     const challenge_id = "challenge_1598787479726";
+//     const challenge = await Models.Challenge.findOne({
+//         id: challenge_id,
+//     });
+//     // const commits = await Models.Commit.find({
+//     //     committer: {
+//     //         $in: challenge.participants,
+//     //     },
+//     //     commit_date: {
+//     //         $gte: challenge.start_dt,
+//     //         $lte: challenge.finish_dt,
+//     //     },
+//     // });
+//     // let date = {};
+
+//     // commits.forEach((commit) => {
+//     //     if (
+//     //         Object.keys(date).indexOf(
+//     //             moment(commit.commit_date).format("YYYY-MM-DD")
+//     //         ) < 0
+//     //     ) {
+//     //         date[moment(commit.commit_date).format("YYYY-MM-DD")] = 0;
+//     //     }
+//     //     date[moment(commit.commit_date).format("YYYY-MM-DD")]++;
+//     // });
+
+//     const users = await Models.User.find({
+//         _id: challenge.participants,
+//     });
+
+//     const hours = { 새벽: {}, 오전: {}, 오후: {}, 밤: {} };
+
+//     for (let i = 0; i < users.length; i++) {
+//         const commits = await Models.Commit.find({
+//             committer: users[i]._id,
+//             commit_date: {
+//                 $gte: challenge.start_dt,
+//                 $lte: challenge.finish_dt,
+//             },
+//         });
+
+//         for (let c = 0; c < commits.length; c++) {
+//             const currentHour = moment(commits[c].commit_date).hour();
+//             if (currentHour >= 0 && currentHour < 7) {
+//                 // 새벽
+//                 if (Object.keys(hours["새벽"]).indexOf(users[i].login) < 0) {
+//                     hours["새벽"][users[i].login] = 0;
+//                 }
+
+//                 hours["새벽"][users[i].login] += 1;
+//             } else if (currentHour >= 7 && currentHour < 13) {
+//                 // 오전
+//                 if (Object.keys(hours["오전"]).indexOf(users[i].login) < 0) {
+//                     hours["오전"][users[i].login] = 0;
+//                 }
+
+//                 hours["오전"][users[i].login] += 1;
+//             } else if (currentHour >= 13 && currentHour < 19) {
+//                 // 오후
+//                 if (Object.keys(hours["오후"]).indexOf(users[i].login) < 0) {
+//                     hours["오후"][users[i].login] = 0;
+//                 }
+
+//                 hours["오후"][users[i].login] += 1;
+//             } else {
+//                 if (Object.keys(hours["밤"]).indexOf(users[i].login) < 0) {
+//                     hours["밤"][users[i].login] = 0;
+//                 }
+
+//                 hours["밤"][users[i].login] += 1;
+//             }
+//         }
+//     }
+//     res.json(hours);
+// });
 
 export default router;

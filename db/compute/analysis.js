@@ -1,5 +1,7 @@
 import * as Models from "../models";
-import moment from "moment";
+import moment from "moment-timezone";
+moment.tz.setDefault("Asia/Seoul");
+
 import * as LibAttendance from "../../lib/attendance";
 import * as LibChallenge from "../../lib/challenge";
 

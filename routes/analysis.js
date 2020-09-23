@@ -1,6 +1,7 @@
 import express from "express";
 
-import moment from "moment";
+import moment from "moment-timezone";
+moment.tz.setDefault("Asia/Seoul");
 
 import { Event } from "../db/models/events";
 import { Challenge } from "../db/models/challenges";
@@ -404,11 +405,10 @@ router.get("/attendances/:challenge_id/rank", async (req, res) => {
                 if (idx === 10) break;
                 const participant = _allAttendances.data[idx];
                 if (idx === 0) attCount = participant.attendances_count;
-
                 if (attCount != participant.attendances_count) {
                     attCount = participant.attendances_count;
                     rank += accumulate;
-                    accumulate = 0;
+                    accumulate = 1;
                 } else {
                     accumulate += 1;
                 }
